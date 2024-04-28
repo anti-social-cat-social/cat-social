@@ -41,3 +41,10 @@ After cloning the project and inside the project folder, run these command
 ```bash
     go run .
 ```
+
+5. Option (Running Docker Compose)
+    If you want to run this project using docker, you can run this command in the root folder of the project
+    
+    ```bash
+    ./scripts/setup.sh
+    ```
