@@ -1,4 +1,4 @@
-package handler
+package hasher
 
 import (
 	"os"

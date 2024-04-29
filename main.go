@@ -1,12 +1,10 @@
 package main
 
 import (
+	"1-cat-social/config"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-
-	"1-cat-social/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -24,8 +22,6 @@ func main() {
 
 	fmt.Println(db.Ping())
 
-	fmt.Println(os.Getenv("DB_PARAMS"))
-
 	r := gin.Default()
 
 	// Grouping the routes and give prefix for the API
@@ -33,6 +29,7 @@ func main() {
 	// Route ping targetted ping Handler
 	// (using gin) Handler is a function that has gin context param
 	api.GET("ping", pingHandler)
+	NewRoute(db, api)
 
 	// Start the server
 	r.Run("0.0.0.0:8080")
