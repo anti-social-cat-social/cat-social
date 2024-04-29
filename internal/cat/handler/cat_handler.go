@@ -49,5 +49,15 @@ func (h *CatHandler) Update(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, response.GenerateResponse("success", cat))
+	modifiedCat := dto.CatUpdateResponseBody{
+		ID:          cat.ID,
+		Name:        cat.Name,
+		Race:        cat.Race,
+		Sex:         cat.Sex,
+		AgeInMonth:  cat.AgeInMonth,
+		Description: cat.Description,
+		ImageUrls:   cat.ImageUrls,
+	}
+
+	c.JSON(200, response.GenerateResponse("success", modifiedCat))
 }

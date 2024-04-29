@@ -13,6 +13,5 @@ type CatUpdateResponseBody struct {
 	Sex         cat.Sex        `json:"sex"`
 	AgeInMonth  int            `json:"ageInMonth"`
 	Description string         `json:"description"`
-	HasMatched  bool           `json:"hasMatched"`
 	ImageUrls   pq.StringArray `json:"imageUrls"`
 }
