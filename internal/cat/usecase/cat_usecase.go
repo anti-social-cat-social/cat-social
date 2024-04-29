@@ -30,7 +30,8 @@ func (uc *CatUsecase) Update(id string, input dto.CatUpdateRequestBody) (*entity
 	if cat.Sex != input.Sex && cat.HasMatched {
 		return nil, &response.ErrorResponse{
 			Code:    400,
-			Message: "Can't update cat that already matched",
+			Error:   "Can't update cat that already matched",
+			Message: "error",
 		}
 	}
 

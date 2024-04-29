@@ -47,14 +47,14 @@ func (repo *CatRepository) FindById(id string) (*entity.Cat, *response.ErrorResp
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, &response.ErrorResponse{
 				Code:    404,
-				Error:   err,
-				Message: "Cat not found",
+				Error:   "Cat not found",
+				Message: "error",
 			}
 		}
 		return nil, &response.ErrorResponse{
 			Code:    500,
-			Error:   err,
-			Message: "Internal Server Error",
+			Error:   "Internal Server Error",
+			Message: "error",
 		}
 	}
 
@@ -71,8 +71,8 @@ func (repo *CatRepository) Update(cat entity.Cat) (*entity.Cat, *response.ErrorR
 		fmt.Println(err)
 		return nil, &response.ErrorResponse{
 			Code:    500,
-			Error:   err,
-			Message: "Internal server error",
+			Error:   "Internal server error",
+			Message: "error",
 		}
 	}
 

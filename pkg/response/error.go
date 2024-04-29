@@ -2,6 +2,7 @@ package response
 
 type ErrorResponse struct {
 	Code    int    `json:"code"`
-	Error   error  `json:"error"`
+	Error   string `json:"error,omitempty"`
+	Trace   error  `json:"trace,omitempty"`
 	Message string `json:"message"`
 }

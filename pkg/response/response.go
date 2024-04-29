@@ -2,10 +2,10 @@ package response
 
 type Response struct {
 	Message string `json:"message"`
-	Data    any    `json:"data"`
+	Data    any    `json:"data,omitempty"`
 }
 
-func GenerateResponse(code int, message string, data any) Response {
+func GenerateResponse(message string, data any) Response {
 	response := Response{
 		Message: message,
 		Data:    data,
