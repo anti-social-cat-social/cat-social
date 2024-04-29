@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
+	"1-cat-social/server"
 	"log"
-	"net/http"
-	"os"
 
 	"1-cat-social/config"
 
@@ -22,34 +20,10 @@ func main() {
 
 	db := config.InitDb()
 
-	fmt.Println(db.Ping())
-
-	fmt.Println(os.Getenv("DB_PARAMS"))
-
 	r := gin.Default()
 
-	// Grouping the routes and give prefix for the API
-	api := r.Group("api/v1")
-	// Route ping targetted ping Handler
-	// (using gin) Handler is a function that has gin context param
-	api.GET("ping", pingHandler)
+	server.NewRoute(r, db)
 
 	// Start the server
 	r.Run("0.0.0.0:8080")
-}
-
-// Handler for ping request from routes
-func pingHandler(ctx *gin.Context) {
-	ctx.JSON(
-		http.StatusOK,
-		struct {
-			Success bool   `json:"success"`
-			Message string `json:"message"`
-			Data    any    `json:"data"`
-		}{
-			Success: true,
-			Message: "Server is online",
-			Data:    true,
-		},
-	)
 }
