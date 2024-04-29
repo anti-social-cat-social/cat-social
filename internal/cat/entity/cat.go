@@ -1,19 +1,23 @@
 package cat
 
-import "time"
+import (
+	"time"
+
+	"github.com/lib/pq"
+)
 
 type Cat struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Race        Race      `json:"race"`
-	Sex         Sex       `json:"sex"`
-	AgeInMonth  int       `json:"ageInMonth"`
-	Description string    `json:"description"`
-	HasMatched  bool      `json:"hasMatched"`
-	ImageUrls   []string  `json:"imageUrls"`
-	CreatedAt   time.Time `json:"createdAt"`
-	IsDeleted   bool      `json:"isDeleted"`
-	OwnerId     string    `json:"-"`
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	Race        Race           `json:"race"`
+	Sex         Sex            `json:"sex"`
+	AgeInMonth  int            `json:"ageInMonth"`
+	Description string         `json:"description"`
+	HasMatched  bool           `json:"hasMatched"`
+	ImageUrls   pq.StringArray `json:"imageUrls"`
+	CreatedAt   time.Time      `json:"createdAt"`
+	IsDeleted   bool           `json:"isDeleted"`
+	OwnerId     string         `json:"-"`
 }
 
 type Sex string

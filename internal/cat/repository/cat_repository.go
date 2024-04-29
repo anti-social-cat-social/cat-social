@@ -58,17 +58,14 @@ func (repo *CatRepository) FindById(id string) (*entity.Cat, *response.ErrorResp
 		}
 	}
 
-	fmt.Println("the cat", cat)
-
 	return cat, nil
 }
 
 func (repo *CatRepository) Update(cat entity.Cat) (*entity.Cat, *response.ErrorResponse) {
-	query := "UPDATE cats SET name = $1, race = $1, sex = $1, ageInMonth = $1, description = $1, imageUrls = $1"
+	query := "UPDATE cats SET name = $1, race = $2, sex = $3, ageInMonth = $4, description = $5, imageUrls = $6"
 	_, err := repo.db.Exec(query, cat.Name, cat.Race, cat.Sex, cat.AgeInMonth, cat.Description, cat.ImageUrls)
 
 	if err != nil {
-		fmt.Println(err)
 		return nil, &response.ErrorResponse{
 			Code:    500,
 			Error:   "Internal server error",

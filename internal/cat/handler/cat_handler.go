@@ -44,7 +44,7 @@ func (h *CatHandler) Update(c *gin.Context) {
 
 	cat, err := h.uc.Update(id, request)
 	if err != nil {
-		c.JSON(err.Code, response.GenerateResponse(err.Message, nil))
+		c.JSON(err.Code, response.GenerateResponse(err.Error, nil))
 		c.Abort()
 		return
 	}
