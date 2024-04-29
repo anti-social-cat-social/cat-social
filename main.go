@@ -6,8 +6,11 @@ import (
 	"net/http"
 	"os"
 
+	"1-cat-social/config"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -16,6 +19,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	db := config.InitDb()
+
+	fmt.Println(db.Ping())
 
 	fmt.Println(os.Getenv("DB_PARAMS"))
 
@@ -26,9 +33,6 @@ func main() {
 	// Route ping targetted ping Handler
 	// (using gin) Handler is a function that has gin context param
 	api.GET("ping", pingHandler)
-
-	// Initialize other routes
-	NewRoute(api)
 
 	// Start the server
 	r.Run("0.0.0.0:8080")

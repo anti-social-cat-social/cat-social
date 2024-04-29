@@ -41,3 +41,10 @@ After cloning the project and inside the project folder, run these command
 ```bash
     go run .
 ```
+
+5. Optional (Running Database Using Docker Compose For Development)
+    If you want to run the database using docker compose, you can run this command to start the database
+    
+    ```bash
+    ./scripts/setup.sh
+    ```
