@@ -30,21 +30,21 @@ func (h *CatHandler) Update(c *gin.Context) {
 
 	var request dto.CatUpdateRequestBody
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(400, response.GenerateResponse("error", nil))
+		c.JSON(400, response.GenerateResponse(err.Error(), nil))
 		c.Abort()
 		return
 	}
 
 	errr := validate.ValidateUpdateCatForm(request)
 	if errr != nil {
-		c.JSON(400, response.GenerateResponse("error", nil))
+		c.JSON(400, response.GenerateResponse(errr.Error(), nil))
 		c.Abort()
 		return
 	}
 
 	cat, err := h.uc.Update(id, request)
 	if err != nil {
-		c.JSON(err.Code, response.GenerateResponse("error", nil))
+		c.JSON(err.Code, response.GenerateResponse(err.Message, nil))
 		c.Abort()
 		return
 	}
