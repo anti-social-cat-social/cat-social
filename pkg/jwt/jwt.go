@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"1-cat-social/internal/user"
 	"errors"
 	"os"
 	"time"
@@ -10,27 +11,33 @@ import (
 
 // Custom claim used to generate token
 type CustomClaim struct {
-	name string
+	Uuid string
 	jwt.RegisteredClaims
 }
 
-var key string
+var (
+	key            string
+	expirationTime int64
+)
 
-func getKey() string {
+func getKey() []byte {
 	key = os.Getenv("JWT_SECRET")
 
-	return key
+	return []byte(key)
 }
 
-func GenerateToken() (string, error) {
+func GenerateToken(userData user.User) (string, error) {
+	// Set expiration time
+	expirationTime = 8
+
 	claims := CustomClaim{
-		"",
+		userData.ID,
 		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(3 * 24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(expirationTime) * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    "Cat social media",
-			Subject:   "",
-			ID:        "",
+			Subject:   userData.Name,
+			ID:        userData.ID,
 		},
 	}
 

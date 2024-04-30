@@ -3,6 +3,8 @@ package main
 import (
 	"1-cat-social/internal/auth"
 	"1-cat-social/internal/user"
+	"1-cat-social/pkg/response"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
@@ -23,4 +25,8 @@ func initializeAuthHandler(db *sqlx.DB, router *gin.RouterGroup) {
 	// Do not forget
 	// Call auth router inside the handler
 	authH.Router(router)
+}
+
+func NoRouteHandler(ctx *gin.Context) {
+	response.GenerateResponse(ctx, http.StatusNotFound, response.WithMessage("Page not found"))
 }

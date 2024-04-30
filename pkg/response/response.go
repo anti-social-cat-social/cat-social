@@ -19,8 +19,8 @@ type response struct {
 // by default it is using http status StatusText
 // ex : code 201 - message Created
 func WithMessage(message string) responseOpts {
-	return func(sr *response) error {
-		sr.Message = message
+	return func(r *response) error {
+		r.Message = message
 
 		return nil
 	}

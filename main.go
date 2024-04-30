@@ -29,6 +29,9 @@ func main() {
 	// Route ping targetted ping Handler
 	// (using gin) Handler is a function that has gin context param
 	api.GET("ping", pingHandler)
+
+	// Handle no route
+	r.NoRoute(NoRouteHandler)
 	NewRoute(db, api)
 
 	// Start the server
@@ -40,9 +43,9 @@ func pingHandler(ctx *gin.Context) {
 	ctx.JSON(
 		http.StatusOK,
 		struct {
-			Success bool   `json:"success"`
-			Message string `json:"message"`
 			Data    any    `json:"data"`
+			Message string `json:"message"`
+			Success bool   `json:"success"`
 		}{
 			Success: true,
 			Message: "Server is online",

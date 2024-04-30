@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -19,7 +20,18 @@ type userRepository struct {
 
 // Store new ueser to database
 func (u *userRepository) Create(entity User) (*User, *localError.GlobalError) {
-	panic("unimplemented")
+	// Generate user UUID
+	userId := uuid.NewString()
+	entity.ID = userId
+
+	// Insert into database
+	query := "INSERT INTO users (uuid, name, email, password) values (:uuid, :name, :email, :password)"
+	_, err := u.db.NamedExec(query, &entity)
+	if err != nil {
+		return nil, localError.ErrInternalServer(err.Error(), err)
+	}
+
+	return &entity, nil
 }
 
 // Find user by email
