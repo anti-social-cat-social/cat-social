@@ -27,14 +27,21 @@ After cloning the project and inside the project folder, run these command
     cp .env.example .env
 ```
 
-3. Running migration
+3. Creating migration
+    Create migration for the project using [Golang Migrate](https://github.com/golang-migrate/migrate)
+    
+    ```bash
+     migrate create -ext sql -dir db/migrations create_users_cats
+    ```
+
+4. Running migration
    Run the project migration to get updated with the table
 
 ```
-    COming soon hehe
+   migrate -path database/migration -database "postgres://testing:testing@localhost:5433/testing?sslmode=disable" -verbose up
 ```
 
-4. Run the project
+5. Run the project
    After all the step above is fulfilled, you can run this project using this command.
    (Make sure you are in root folder of the project)
 
