@@ -8,6 +8,7 @@ import (
 )
 
 type ICatUsecase interface {
+	GetAll(queryParam *dto.CatRequestQueryParams) ([]*entity.Cat, *response.ErrorResponse)
 	Update(id string, dto dto.CatUpdateRequestBody) (*entity.Cat, *response.ErrorResponse)
 }
 
@@ -21,6 +22,10 @@ func NewCatUsecase(repo repo.ICatRepository) ICatUsecase {
 	}
 }
 
+func (uc *CatUsecase) GetAll(queryParam *dto.CatRequestQueryParams) ([]*entity.Cat, *response.ErrorResponse) {
+	return uc.repo.FindAll(queryParam)
+}
+
 func (uc *CatUsecase) Update(id string, input dto.CatUpdateRequestBody) (*entity.Cat, *response.ErrorResponse) {
 	cat, error := uc.repo.FindById(id)
 	if error != nil {
@@ -30,7 +35,7 @@ func (uc *CatUsecase) Update(id string, input dto.CatUpdateRequestBody) (*entity
 	if cat.Sex != input.Sex && cat.HasMatched {
 		return nil, &response.ErrorResponse{
 			Code:    400,
-			Error:   "Can't update cat that already matched",
+			Err:     "Can't update cat that already matched",
 			Message: "error",
 		}
 	}
