@@ -25,7 +25,7 @@ func (u *userRepository) Create(entity User) (*User, *localError.GlobalError) {
 	entity.ID = userId
 
 	// Insert into database
-	query := "INSERT INTO users (uuid, name, email, password) values (:uuid, :name, :email, :password)"
+	query := "INSERT INTO users (id, name, email, password) values (:id, :name, :email, :password)"
 	_, err := u.db.NamedExec(query, &entity)
 	if err != nil {
 		return nil, localError.ErrInternalServer(err.Error(), err)
