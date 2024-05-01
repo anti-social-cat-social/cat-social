@@ -57,7 +57,7 @@ func ValidateToken(userToken string) (*CustomClaim, error) {
 	tokenString := getKey()
 
 	// Parse token
-	token, err := jwt.Parse(userToken, func(t *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(userToken, &CustomClaim{}, func(t *jwt.Token) (interface{}, error) {
 		// Validate the token alg
 		// If alg is not valid, return error
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -83,8 +83,8 @@ func ValidateToken(userToken string) (*CustomClaim, error) {
 	}
 
 	// If claims is valid, return it
-	if claims, ok := token.Claims.(CustomClaim); ok {
-		return &claims, nil
+	if claims, ok := token.Claims.(*CustomClaim); ok {
+		return claims, nil
 	} else {
 		// Otherwise, return error message
 		return nil, errors.New("cannot handle token")
