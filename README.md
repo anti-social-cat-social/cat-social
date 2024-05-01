@@ -27,6 +27,8 @@ After cloning the project and inside the project folder, run these command
     cp .env.example .env
 ```
 
+This service depends on `golang-migrate cli`. Install it first globally before do migrations (step 3 and 4).
+
 3. Creating migration
     Create migration for the project using [Golang Migrate](https://github.com/golang-migrate/migrate)
     
