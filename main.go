@@ -1,12 +1,12 @@
 package main
 
 import (
+	"1-cat-social/config"
 	"1-cat-social/server"
+	"fmt"
 	"log"
 	"log/slog"
 	"os"
-
-	"1-cat-social/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -22,11 +22,15 @@ func main() {
 
 	db := config.InitDb()
 
+	fmt.Println(db.Ping())
+
+	// Logger
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	slog.SetDefault(logger)
 
 	r := gin.Default()
 
+	// Initialize all routes
 	server.NewRoute(r, db)
 
 	// Start the server

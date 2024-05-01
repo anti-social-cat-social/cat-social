@@ -1,9 +1,12 @@
 package server
 
 import (
+	"1-cat-social/internal/auth"
 	catHandler "1-cat-social/internal/cat/handler"
 	catRepository "1-cat-social/internal/cat/repository"
 	catUseCase "1-cat-social/internal/cat/usecase"
+	"1-cat-social/internal/user"
+	"1-cat-social/pkg/response"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,16 +14,17 @@ import (
 )
 
 func NewRoute(engine *gin.Engine, db *sqlx.DB) {
-	router := engine.Group("/v1")
+	// Handle for not found routes
+	engine.NoRoute(NoRouteHandler)
+	router := engine.Group("v1")
 
 	router.GET("ping", pingHandler)
 
+	initializeAuthHandler(db, router)
 	initializeCatHandler(router, db)
-
 }
 
 func initializeCatHandler(router *gin.RouterGroup, db *sqlx.DB) {
-
 	catRepository := catRepository.NewCatRepository(db)
 	catUsecase := catUseCase.NewCatUsecase(catRepository)
 	catHandler := catHandler.NewCatHandler(catUsecase)
@@ -28,14 +32,30 @@ func initializeCatHandler(router *gin.RouterGroup, db *sqlx.DB) {
 	catHandler.Router(router)
 }
 
+func initializeAuthHandler(db *sqlx.DB, router *gin.RouterGroup) {
+	// Initialize all ncessary dependecies
+	userRepo := user.NewUserRepository(db)
+	userUc := user.NewUserUsecase(userRepo)
+	authUc := auth.NewAuthUsecase(userUc)
+	authH := auth.NewAuthHandler(authUc)
+
+	// Do not forget
+	// Call auth router inside the handler
+	authH.Router(router)
+}
+
+func NoRouteHandler(ctx *gin.Context) {
+	response.GenerateResponse(ctx, http.StatusNotFound, response.WithMessage("Page not found"))
+}
+
 // Handler for ping request from routes
 func pingHandler(ctx *gin.Context) {
 	ctx.JSON(
 		http.StatusOK,
 		struct {
-			Success bool   `json:"success"`
-			Message string `json:"message"`
 			Data    any    `json:"data"`
+			Message string `json:"message"`
+			Success bool   `json:"success"`
 		}{
 			Success: true,
 			Message: "Server is online",

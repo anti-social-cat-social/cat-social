@@ -34,7 +34,7 @@ func (h *CatHandler) GetAll(c *gin.Context) {
 	var queryParam dto.CatRequestQueryParams
 	if err := c.ShouldBindQuery(&queryParam); err != nil {
 		logger.Info(err.Error())
-		c.JSON(http.StatusBadRequest, response.GenerateResponse(err.Error(), nil))
+		response.GenerateResponse(c, http.StatusBadRequest, response.WithMessage(err.Error()))
 		c.Abort()
 		return
 	}
@@ -42,14 +42,14 @@ func (h *CatHandler) GetAll(c *gin.Context) {
 	cats, err := h.uc.GetAll(&queryParam)
 	if err != nil {
 		logger.Error(err)
-		c.JSON(err.Code, response.GenerateResponse(err.Err, nil))
+		response.GenerateResponse(c, err.Code, response.WithMessage(err.Message), response.WithData(err.Err))
 		c.Abort()
 		return
 	}
 
 	catResponse := dto.FormatCatsResponse(cats)
 
-	c.JSON(http.StatusOK, response.GenerateResponse("success", catResponse))
+	response.GenerateResponse(c, http.StatusOK, response.WithMessage("success"), response.WithData(catResponse))
 }
 
 func (h *CatHandler) Update(c *gin.Context) {
@@ -57,21 +57,21 @@ func (h *CatHandler) Update(c *gin.Context) {
 
 	var request dto.CatUpdateRequestBody
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(400, response.GenerateResponse(err.Error(), nil))
+		response.GenerateResponse(c, 400, response.WithMessage(err.Error()))
 		c.Abort()
 		return
 	}
 
 	errr := validate.ValidateUpdateCatForm(request)
 	if errr != nil {
-		c.JSON(400, response.GenerateResponse(errr.Error(), nil))
+		response.GenerateResponse(c, 400, response.WithMessage(errr.Error()))
 		c.Abort()
 		return
 	}
 
 	cat, err := h.uc.Update(id, request)
 	if err != nil {
-		c.JSON(err.Code, response.GenerateResponse(err.Err, nil))
+		response.GenerateResponse(c, err.Code, response.WithMessage(err.Message))
 		c.Abort()
 		return
 	}
@@ -86,7 +86,7 @@ func (h *CatHandler) Update(c *gin.Context) {
 		ImageUrls:   cat.ImageUrls,
 	}
 
-	c.JSON(200, response.GenerateResponse("success", modifiedCat))
+	response.GenerateResponse(c, http.StatusOK, response.WithMessage("Success"), response.WithData(modifiedCat))
 }
 
 func (h *CatHandler) Match(c *gin.Context) {
