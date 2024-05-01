@@ -5,6 +5,8 @@ import (
 	"1-cat-social/server"
 	"fmt"
 	"log"
+	"log/slog"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -21,6 +23,10 @@ func main() {
 	db := config.InitDb()
 
 	fmt.Println(db.Ping())
+
+	// Logger
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	slog.SetDefault(logger)
 
 	r := gin.Default()
 

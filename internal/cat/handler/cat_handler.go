@@ -4,7 +4,9 @@ import (
 	dto "1-cat-social/internal/cat/dto"
 	uc "1-cat-social/internal/cat/usecase"
 	validate "1-cat-social/internal/cat/validate"
+	"1-cat-social/pkg/logger"
 	"1-cat-social/pkg/response"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,7 +24,30 @@ func NewCatHandler(uc uc.ICatUsecase) *CatHandler {
 func (h *CatHandler) Router(r *gin.RouterGroup) {
 	endpoint := r.Group("/cats")
 
+	endpoint.GET("", h.GetAll)
 	endpoint.PUT("/:id", h.Update)
+}
+
+func (h *CatHandler) GetAll(c *gin.Context) {
+	var queryParam dto.CatRequestQueryParams
+	if err := c.ShouldBindQuery(&queryParam); err != nil {
+		logger.Info(err.Error())
+		response.GenerateResponse(c, http.StatusBadRequest, response.WithMessage(err.Error()))
+		c.Abort()
+		return
+	}
+
+	cats, err := h.uc.GetAll(&queryParam)
+	if err != nil {
+		logger.Error(err)
+		response.GenerateResponse(c, err.Code, response.WithMessage(err.Message), response.WithData(err.Err))
+		c.Abort()
+		return
+	}
+
+	catResponse := dto.FormatCatsResponse(cats)
+
+	response.GenerateResponse(c, http.StatusOK, response.WithMessage("success"), response.WithData(catResponse))
 }
 
 func (h *CatHandler) Update(c *gin.Context) {
@@ -59,5 +84,5 @@ func (h *CatHandler) Update(c *gin.Context) {
 		ImageUrls:   cat.ImageUrls,
 	}
 
-	response.GenerateResponse(c, 200, response.WithMessage("Success"), response.WithData(modifiedCat))
+	response.GenerateResponse(c, http.StatusOK, response.WithMessage("Success"), response.WithData(modifiedCat))
 }
