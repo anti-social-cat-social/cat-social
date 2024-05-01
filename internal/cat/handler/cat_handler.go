@@ -6,6 +6,7 @@ import (
 	validate "1-cat-social/internal/cat/validate"
 	"1-cat-social/pkg/logger"
 	"1-cat-social/pkg/response"
+	"1-cat-social/pkg/validator"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -22,10 +23,11 @@ func NewCatHandler(uc uc.ICatUsecase) *CatHandler {
 }
 
 func (h *CatHandler) Router(r *gin.RouterGroup) {
-	endpoint := r.Group("/cats")
+	endpoint := r.Group("/cat")
 
 	endpoint.GET("", h.GetAll)
 	endpoint.PUT("/:id", h.Update)
+	endpoint.POST("/match", h.Match)
 }
 
 func (h *CatHandler) GetAll(c *gin.Context) {
@@ -85,4 +87,16 @@ func (h *CatHandler) Update(c *gin.Context) {
 	}
 
 	c.JSON(200, response.GenerateResponse("success", modifiedCat))
+}
+
+func (h *CatHandler) Match(c *gin.Context) {
+	var request dto.CatMatchRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		validation := validator.FormatValidation(err)
+		logger.Info(validation)
+		c.JSON(http.StatusBadRequest, response.GenerateResponse(validation, nil))
+		return
+	}
+
+	c.JSON(http.StatusCreated, response.GenerateResponse("success", nil))
 }

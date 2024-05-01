@@ -26,3 +26,9 @@ type CatRequestQueryParams struct {
 	Owned      string `form:"owned" binding:"omitempty,oneof=true false"`
 	Search     string `form:"search"`
 }
+
+type CatMatchRequest struct {
+	MatchCatId string `json:"matchCatId" binding:"required"`
+	UserCatId  string `json:"userCatId" binding:"required"`
+	Message    string `json:"message" binding:"required,min=5,max=120"`
+}

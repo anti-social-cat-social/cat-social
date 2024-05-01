@@ -1,11 +1,11 @@
 package response
 
 type Response struct {
-	Message string `json:"message"`
-	Data    any    `json:"data,omitempty"`
+	Message interface{} `json:"message"`
+	Data    any         `json:"data,omitempty"`
 }
 
-func GenerateResponse(message string, data any) Response {
+func GenerateResponse(message interface{}, data any) Response {
 	response := Response{
 		Message: message,
 		Data:    data,
