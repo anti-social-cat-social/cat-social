@@ -4,6 +4,7 @@ import (
 	dto "1-cat-social/internal/cat/dto"
 	uc "1-cat-social/internal/cat/usecase"
 	validate "1-cat-social/internal/cat/validate"
+	"1-cat-social/internal/middleware"
 	"1-cat-social/pkg/logger"
 	"1-cat-social/pkg/response"
 	"net/http"
@@ -22,7 +23,8 @@ func NewCatHandler(uc uc.ICatUsecase) *CatHandler {
 }
 
 func (h *CatHandler) Router(r *gin.RouterGroup) {
-	endpoint := r.Group("/cats")
+	endpoint := r.Group("/cat")
+	endpoint.Use(middleware.UseJwtAuth)
 
 	endpoint.GET("", h.GetAll)
 	endpoint.PUT("/:id", h.Update)
@@ -37,10 +39,12 @@ func (h *CatHandler) GetAll(c *gin.Context) {
 		return
 	}
 
-	cats, err := h.uc.GetAll(&queryParam)
+	userID := c.MustGet("userID").(string)
+
+	cats, err := h.uc.GetAll(&queryParam, userID)
 	if err != nil {
 		logger.Error(err)
-		response.GenerateResponse(c, err.Code, response.WithMessage(err.Message), response.WithData(err.Err))
+		response.GenerateResponse(c, err.Code, response.WithMessage(err.Message))
 		c.Abort()
 		return
 	}
