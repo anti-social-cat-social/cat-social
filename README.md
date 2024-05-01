@@ -31,7 +31,7 @@ After cloning the project and inside the project folder, run these command
     Create migration for the project using [Golang Migrate](https://github.com/golang-migrate/migrate)
     
     ```bash
-     migrate create -ext sql -dir db/migrations create_users_cats
+     migrate create -ext sql -dir database/migrations {create_users_cats}
     ```
 
 4. Running migration
