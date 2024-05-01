@@ -44,6 +44,18 @@ func (h *authHandler) login(ctx *gin.Context) {
 		return
 	}
 
+	// Validate request
+	validate := validator.New(validator.WithRequiredStructEnabled())
+
+	// Generate error validation if not any field is not valid
+	if err := validate.Struct(request); err != nil {
+		validatorMessage := validation.GenerateStructValidationError(err)
+
+		response.GenerateResponse(ctx, http.StatusBadRequest, response.WithMessage("Any input is not valid"), response.WithData(validatorMessage))
+		ctx.Abort()
+		return
+	}
+
 	// Process login on usecase
 	result, err := h.uc.Login(request)
 	if err != nil {
