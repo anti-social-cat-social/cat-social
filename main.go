@@ -2,9 +2,9 @@ package main
 
 import (
 	"1-cat-social/config"
+	"1-cat-social/server"
 	"fmt"
 	"log"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -24,32 +24,9 @@ func main() {
 
 	r := gin.Default()
 
-	// Grouping the routes and give prefix for the API
-	api := r.Group("api/v1")
-	// Route ping targetted ping Handler
-	// (using gin) Handler is a function that has gin context param
-	api.GET("ping", pingHandler)
-
-	// Handle no route
-	r.NoRoute(NoRouteHandler)
-	NewRoute(db, api)
+	// Initialize all routes
+	server.NewRoute(r, db)
 
 	// Start the server
 	r.Run("0.0.0.0:8080")
-}
-
-// Handler for ping request from routes
-func pingHandler(ctx *gin.Context) {
-	ctx.JSON(
-		http.StatusOK,
-		struct {
-			Data    any    `json:"data"`
-			Message string `json:"message"`
-			Success bool   `json:"success"`
-		}{
-			Success: true,
-			Message: "Server is online",
-			Data:    true,
-		},
-	)
 }

@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"1-cat-social/internal/middleware"
 	"1-cat-social/internal/user"
 	"1-cat-social/pkg/response"
 
@@ -29,11 +28,6 @@ func (h *authHandler) Router(r *gin.RouterGroup) {
 	// Utillize group to use global setting on group parent (if exists)
 	group.POST("login", h.login)
 	group.POST("register", h.register)
-
-	// Example of using JWT middleware
-	group.Use(middleware.UseJwtAuth).POST("test", func(ctx *gin.Context) {
-		ctx.JSON(200, []byte("gagal berkali kali"))
-	})
 }
 
 func (h *authHandler) login(ctx *gin.Context) {
@@ -67,6 +61,13 @@ func (h *authHandler) register(ctx *gin.Context) {
 		return
 	}
 
+	// Validate request
+	// validate := validator.New(validator.WithRequiredStructEnabled())
+	//
+	// if err := validate.Struct(request); err != nil {
+	//
+	// }
+	//
 	// Process register via usecase
 	result, err := h.uc.Register(request)
 	if err != nil {
