@@ -45,7 +45,9 @@ func (h *CatHandler) GetAll(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, response.GenerateResponse("success", cats))
+	catResponse := dto.FormatCatsResponse(cats)
+
+	c.JSON(http.StatusOK, response.GenerateResponse("success", catResponse))
 }
 
 func (h *CatHandler) Update(c *gin.Context) {

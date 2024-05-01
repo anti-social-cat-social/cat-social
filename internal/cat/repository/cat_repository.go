@@ -119,8 +119,13 @@ func (repo *CatRepository) generateFilterCatQuery(queryParam *dto.CatRequestQuer
 	if queryParam.Search != "" {
 		query += fmt.Sprintf(" AND WHERE name LIKE '%%%s%%'", queryParam.Search)
 	}
+
+	query += " ORDER BY createdat DESC"
+
 	if queryParam.Limit != 0 {
 		query += fmt.Sprintf(" LIMIT %d", queryParam.Limit)
+	} else {
+		query += " LIMIT 10"
 	}
 	if queryParam.Offset != 0 {
 		query += fmt.Sprintf(" OFFSET %d", queryParam.Offset)
