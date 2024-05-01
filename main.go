@@ -3,6 +3,8 @@ package main
 import (
 	"1-cat-social/server"
 	"log"
+	"log/slog"
+	"os"
 
 	"1-cat-social/config"
 
@@ -19,6 +21,9 @@ func main() {
 	}
 
 	db := config.InitDb()
+
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	slog.SetDefault(logger)
 
 	r := gin.Default()
 
