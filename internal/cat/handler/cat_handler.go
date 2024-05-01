@@ -42,7 +42,7 @@ func (h *CatHandler) GetAll(c *gin.Context) {
 	cats, err := h.uc.GetAll(&queryParam)
 	if err != nil {
 		logger.Error(err)
-		response.GenerateResponse(c, err.Code, response.WithMessage(err.Message), response.WithData(err.Err))
+		response.GenerateResponse(c, err.Code, response.WithMessage(err.Err))
 		c.Abort()
 		return
 	}
