@@ -46,3 +46,10 @@ func ErrNotFound(message string, err error) *GlobalError {
 
 	return baseError
 }
+
+// Return conflict error structure with customize message and error.
+func ErrConflict(message string, err error) *GlobalError {
+	baseError := ErrBase(http.StatusConflict, message, err)
+
+	return baseError
+}

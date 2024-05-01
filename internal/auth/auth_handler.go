@@ -3,8 +3,11 @@ package auth
 import (
 	"1-cat-social/internal/user"
 	"1-cat-social/pkg/response"
+	"1-cat-social/pkg/validation"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 // Auth handler structure for auth
@@ -49,7 +52,7 @@ func (h *authHandler) login(ctx *gin.Context) {
 		return
 	}
 
-	response.GenerateResponse(ctx, 200, response.WithMessage("Success Login"), response.WithData(result))
+	response.GenerateResponse(ctx, 200, response.WithMessage("User logged successfully"), response.WithData(result))
 }
 
 func (h *authHandler) register(ctx *gin.Context) {
@@ -62,12 +65,17 @@ func (h *authHandler) register(ctx *gin.Context) {
 	}
 
 	// Validate request
-	// validate := validator.New(validator.WithRequiredStructEnabled())
-	//
-	// if err := validate.Struct(request); err != nil {
-	//
-	// }
-	//
+	validate := validator.New(validator.WithRequiredStructEnabled())
+
+	// Generate error validation if not any field is not valid
+	if err := validate.Struct(request); err != nil {
+		validatorMessage := validation.GenerateStructValidationError(err)
+
+		response.GenerateResponse(ctx, http.StatusBadRequest, response.WithMessage("Any input is not valid"), response.WithData(validatorMessage))
+		ctx.Abort()
+		return
+	}
+
 	// Process register via usecase
 	result, err := h.uc.Register(request)
 	if err != nil {
@@ -76,5 +84,5 @@ func (h *authHandler) register(ctx *gin.Context) {
 		return
 	}
 
-	response.GenerateResponse(ctx, 200, response.WithMessage("Success Register"), response.WithData(result))
+	response.GenerateResponse(ctx, 201, response.WithMessage("User registered successfully"), response.WithData(result))
 }

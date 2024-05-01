@@ -18,9 +18,9 @@ type authUsecase struct {
 }
 
 type authResponse struct {
-	UserID    string `json:"userId"`
-	Token     string `json:"accessToken"`
-	ExpiredAt string `json:"expiredAt"`
+	Email string `json:"email"`
+	Name  string `json:"name"`
+	Token string `json:"accessToken"`
 }
 
 var tokenExpirationHour time.Duration = time.Duration(8)
@@ -48,9 +48,9 @@ func (a *authUsecase) Login(dto user.LoginDTO) (*authResponse, *localError.Globa
 
 	// Map claim to auth response auth
 	response := authResponse{
-		UserID:    result.ID,
-		Token:     token,
-		ExpiredAt: time.Now().Add(8 * time.Hour).Format(time.RFC3339),
+		Email: result.Email,
+		Name:  result.Name,
+		Token: token,
 	}
 
 	return &response, nil
@@ -72,9 +72,9 @@ func (a *authUsecase) Register(dto user.UserDTO) (*authResponse, *localError.Glo
 
 	// Map token to auth response auth
 	response := authResponse{
-		UserID:    user.Name,
-		Token:     token,
-		ExpiredAt: time.Now().Add(8 * time.Hour).Format(time.RFC3339),
+		Email: user.Email,
+		Name:  user.Name,
+		Token: token,
 	}
 
 	return &response, nil

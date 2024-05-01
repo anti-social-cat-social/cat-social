@@ -22,7 +22,7 @@ func (u *userUsecase) Create(dto UserDTO) (*User, *localError.GlobalError) {
 	// Check if user with given email is already exists
 	existedUser, _ := u.repo.FindByEmail(dto.Email)
 	if existedUser != nil {
-		return nil, localError.ErrForbidden("User already exists", errors.New("user already exists"))
+		return nil, localError.ErrConflict("User already exists", errors.New("user already exists"))
 	}
 
 	// Map DTO to user entity

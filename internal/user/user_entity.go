@@ -11,12 +11,12 @@ type User struct {
 }
 
 type UserDTO struct {
-	Name     string `json:"name" validate:"required,min=5,max=50,alpha"`
+	Name     string `json:"name" validate:"required,min=5,max=50"`
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=5,max=15"`
 }
 
 type LoginDTO struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" validate:"required,min=5,max=50"`
+	Password string `json:"password" validate:"required,min=5,max=15"`
 }

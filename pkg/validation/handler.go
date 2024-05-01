@@ -1,4 +1,4 @@
-package validate
+package validation
 
 import "github.com/go-playground/validator/v10"
 
@@ -7,10 +7,10 @@ type validationError struct {
 	Messsage string `json:"message"`
 }
 
-func GenerateStructValidationError(errorValidate validator.ValidationErrors) []validationError {
+func GenerateStructValidationError(err error) []validationError {
 	var result []validationError
 
-	for _, err := range errorValidate {
+	for _, err := range err.(validator.ValidationErrors) {
 		e := validationError{
 			Field:    err.Field(),
 			Messsage: err.Error(),

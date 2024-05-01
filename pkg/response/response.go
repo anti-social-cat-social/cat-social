@@ -10,7 +10,7 @@ type responseOpts func(*response) error
 
 // Default success response struct
 type response struct {
-	Code    int    `json:"code"`
+	Code    int    `json:"-"`
 	Message string `json:"message"`
 	Data    any    `json:"data"`
 }
@@ -51,7 +51,7 @@ func GenerateResponse(ctx *gin.Context, code int, options ...responseOpts) {
 	}
 
 	ctx.JSON(
-		200,
+		code,
 		response,
 	)
 }
