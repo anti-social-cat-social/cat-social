@@ -94,9 +94,9 @@ func (h *CatHandler) Match(c *gin.Context) {
 	if err := c.ShouldBindJSON(&request); err != nil {
 		validation := validator.FormatValidation(err)
 		logger.Info(validation)
-		c.JSON(http.StatusBadRequest, response.GenerateResponse(validation, nil))
+		response.GenerateResponse(c, http.StatusBadRequest, response.WithMessage(validation))
 		return
 	}
 
-	c.JSON(http.StatusCreated, response.GenerateResponse("success", nil))
+	response.GenerateResponse(c, http.StatusCreated, response.WithMessage("success"))
 }
