@@ -7,12 +7,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 )
 
 type ICatRepository interface {
-	FindAll(queryParam *dto.CatRequestQueryParams) ([]*entity.Cat, *response.ErrorResponse)
+	FindAll(queryParam *dto.CatRequestQueryParams, userID string) ([]*entity.Cat, *response.ErrorResponse)
 	FindById(id string) (*entity.Cat, *response.ErrorResponse)
 	Update(entity entity.Cat) (*entity.Cat, *response.ErrorResponse)
 }
@@ -27,12 +28,17 @@ func NewCatRepository(db *sqlx.DB) ICatRepository {
 	}
 }
 
-func (repo *CatRepository) FindAll(queryParam *dto.CatRequestQueryParams) ([]*entity.Cat, *response.ErrorResponse) {
+func (repo *CatRepository) FindAll(queryParam *dto.CatRequestQueryParams, userID string) ([]*entity.Cat, *response.ErrorResponse) {
 	cats := []*entity.Cat{}
 
 	query := repo.generateFilterCatQuery(queryParam)
 
-	err := repo.db.Select(&cats, query)
+	var err error
+	if queryParam.Owned == "true" {
+		err = repo.db.Select(&cats, query, userID)
+	} else {
+		err = repo.db.Select(&cats, query)
+	}
 	if err != nil {
 		return nil, &response.ErrorResponse{
 			Code:    500,
@@ -99,25 +105,29 @@ func (repo *CatRepository) generateFilterCatQuery(queryParam *dto.CatRequestQuer
 	query := "SELECT * FROM cats WHERE isdeleted = false"
 
 	if queryParam.ID != "" {
-		query += fmt.Sprintf(" AND WHERE id = '%s'", queryParam.ID)
+		query += fmt.Sprintf(" AND id = '%s'", queryParam.ID)
 	}
 	if queryParam.Race != "" {
-		query += fmt.Sprintf(" AND WHERE race = '%s'", queryParam.Race)
+		query += fmt.Sprintf(" AND race = '%s'", queryParam.Race)
 	}
 	if queryParam.Sex != "" {
-		query += fmt.Sprintf(" AND WHERE sex = '%s'", queryParam.Sex)
+		query += fmt.Sprintf(" AND sex = '%s'", queryParam.Sex)
 	}
 	if queryParam.HasMatched != "" {
-		query += fmt.Sprintf(" AND WHERE hasmatched = %s", queryParam.HasMatched)
+		query += fmt.Sprintf(" AND hasmatched = %s", queryParam.HasMatched)
 	}
 	if queryParam.AgeInMonth != "" {
-		query += fmt.Sprintf(" AND WHERE ageinmonth = %s", queryParam.AgeInMonth)
+		if strings.Contains(queryParam.AgeInMonth, ">") || strings.Contains(queryParam.AgeInMonth, "<") {
+			query += fmt.Sprintf(" AND ageinmonth %s", queryParam.AgeInMonth)
+		} else {
+			query += fmt.Sprintf(" AND ageinmonth = %s", queryParam.AgeInMonth)
+		}
 	}
-	if queryParam.Owned != "" {
-		query += fmt.Sprintf(" AND WHERE owned = %s", queryParam.Owned)
+	if queryParam.Owned != "" && queryParam.Owned == "true" {
+		query += " AND ownerid = $1"
 	}
 	if queryParam.Search != "" {
-		query += fmt.Sprintf(" AND WHERE name LIKE '%%%s%%'", queryParam.Search)
+		query += fmt.Sprintf(" AND name LIKE '%%%s%%'", queryParam.Search)
 	}
 
 	query += " ORDER BY createdat DESC"
