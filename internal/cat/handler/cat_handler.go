@@ -15,11 +15,13 @@ import (
 
 type CatHandler struct {
 	uc uc.ICatUsecase
+	mc uc.IMatchUsecase
 }
 
-func NewCatHandler(uc uc.ICatUsecase) *CatHandler {
+func NewCatHandler(uc uc.ICatUsecase, mc uc.IMatchUsecase) *CatHandler {
 	return &CatHandler{
 		uc: uc,
+		mc: mc,
 	}
 }
 
@@ -45,7 +47,11 @@ func (h *CatHandler) GetAll(c *gin.Context) {
 
 	cats, err := h.uc.GetAll(&queryParam, userID)
 	if err != nil {
-		logger.Error(err)
+		if err.Code == http.StatusInternalServerError {
+			logger.Error(err)
+		} else {
+			logger.Info(err.Err)
+		}
 		response.GenerateResponse(c, err.Code, response.WithMessage(err.Err))
 		c.Abort()
 		return
@@ -99,6 +105,18 @@ func (h *CatHandler) Match(c *gin.Context) {
 		validation := validator.FormatValidation(err)
 		logger.Info(validation)
 		response.GenerateResponse(c, http.StatusBadRequest, response.WithMessage(validation))
+		return
+	}
+
+	userID := c.MustGet("userID").(string)
+	err := h.mc.Match(&request, userID)
+	if err != nil {
+		if err.Code == http.StatusInternalServerError {
+			logger.Error(err)
+		} else {
+			logger.Info(err.Err)
+		}
+		response.GenerateResponse(c, err.Code, response.WithMessage(err.Err))
 		return
 	}
 

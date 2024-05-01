@@ -34,7 +34,7 @@ func (repo *CatRepository) FindAll(queryParam *dto.CatRequestQueryParams, userID
 	query := repo.generateFilterCatQuery(queryParam)
 
 	var err error
-	if queryParam.Owned == "true" {
+	if queryParam.Owned != "" {
 		err = repo.db.Select(&cats, query, userID)
 	} else {
 		err = repo.db.Select(&cats, query)
@@ -94,7 +94,7 @@ func (repo *CatRepository) Update(cat entity.Cat) (*entity.Cat, *response.ErrorR
 		return nil, &response.ErrorResponse{
 			Code:    500,
 			Err:     "Internal server error",
-			Message: "error",
+			Message: err.Error(),
 		}
 	}
 
@@ -123,8 +123,12 @@ func (repo *CatRepository) generateFilterCatQuery(queryParam *dto.CatRequestQuer
 			query += fmt.Sprintf(" AND ageinmonth = %s", queryParam.AgeInMonth)
 		}
 	}
-	if queryParam.Owned != "" && queryParam.Owned == "true" {
-		query += " AND ownerid = $1"
+	if queryParam.Owned != "" {
+		if queryParam.Owned == "true" {
+			query += " AND ownerid = $1"
+		} else {
+			query += " AND ownerid != $1"
+		}
 	}
 	if queryParam.Search != "" {
 		query += fmt.Sprintf(" AND name LIKE '%%%s%%'", queryParam.Search)
