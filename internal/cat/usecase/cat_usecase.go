@@ -8,7 +8,7 @@ import (
 )
 
 type ICatUsecase interface {
-	GetAll(queryParam *dto.CatRequestQueryParams) ([]*entity.Cat, *response.ErrorResponse)
+	GetAll(queryParam *dto.CatRequestQueryParams, userID string) ([]*entity.Cat, *response.ErrorResponse)
 	Update(id string, dto dto.CatUpdateRequestBody) (*entity.Cat, *response.ErrorResponse)
 }
 
@@ -22,8 +22,8 @@ func NewCatUsecase(repo repo.ICatRepository) ICatUsecase {
 	}
 }
 
-func (uc *CatUsecase) GetAll(queryParam *dto.CatRequestQueryParams) ([]*entity.Cat, *response.ErrorResponse) {
-	return uc.repo.FindAll(queryParam)
+func (uc *CatUsecase) GetAll(queryParam *dto.CatRequestQueryParams, userID string) ([]*entity.Cat, *response.ErrorResponse) {
+	return uc.repo.FindAll(queryParam, userID)
 }
 
 func (uc *CatUsecase) Update(id string, input dto.CatUpdateRequestBody) (*entity.Cat, *response.ErrorResponse) {
