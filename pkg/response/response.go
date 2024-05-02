@@ -10,15 +10,15 @@ type responseOpts func(*response) error
 
 // Default success response struct
 type response struct {
-	Code    int    `json:"-"`
-	Message string `json:"message"`
-	Data    any    `json:"data"`
+	Code    int         `json:"-"`
+	Message interface{} `json:"message"`
+	Data    interface{} `json:"data"`
 }
 
 // Customize response message
 // by default it is using http status StatusText
 // ex : code 201 - message Created
-func WithMessage(message string) responseOpts {
+func WithMessage(message interface{}) responseOpts {
 	return func(r *response) error {
 		r.Message = message
 

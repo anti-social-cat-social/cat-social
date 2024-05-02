@@ -6,8 +6,8 @@ import (
 	"runtime"
 )
 
-func Info(message string) {
-	slog.Info(message)
+func Info(message interface{}) {
+	slog.Info(fmt.Sprintf("%v", message))
 }
 
 func Error(err error) {

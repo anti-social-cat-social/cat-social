@@ -3,7 +3,7 @@ package server
 import (
 	"1-cat-social/internal/auth"
 	catHandler "1-cat-social/internal/cat/handler"
-	catRepository "1-cat-social/internal/cat/repository"
+	cr "1-cat-social/internal/cat/repository"
 	catUseCase "1-cat-social/internal/cat/usecase"
 	"1-cat-social/internal/user"
 	"1-cat-social/pkg/response"
@@ -25,10 +25,11 @@ func NewRoute(engine *gin.Engine, db *sqlx.DB) {
 }
 
 func initializeCatHandler(router *gin.RouterGroup, db *sqlx.DB) {
-	catRepository := catRepository.NewCatRepository(db)
+	catRepository := cr.NewCatRepository(db)
+	matchRepository := cr.NewMatchRepository(db)
 	catUsecase := catUseCase.NewCatUsecase(catRepository)
-	catHandler := catHandler.NewCatHandler(catUsecase)
-
+	matchUsecase := catUseCase.NewMatchUsecase(catRepository, matchRepository)
+	catHandler := catHandler.NewCatHandler(catUsecase, matchUsecase)
 	catHandler.Router(router)
 }
 

@@ -33,7 +33,7 @@ This service depends on `golang-migrate cli`. Install it first globally before d
     Create migration for the project using [Golang Migrate](https://github.com/golang-migrate/migrate)
     
     ```bash
-     migrate create -ext sql -dir db/migrations create_users_cats
+     migrate create -ext sql -dir database/migrations {create_users_cats}
     ```
 
 4. Running migration
