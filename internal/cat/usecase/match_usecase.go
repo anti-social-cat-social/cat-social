@@ -14,6 +14,7 @@ type IMatchUsecase interface {
 	Match(req *dto.CatMatchRequest, userID string) *response.ErrorResponse
 	Approve(req *dto.MatchApproveRequest, userID string) *response.ErrorResponse
 	Reject(req *dto.MatchApproveRequest, userID string) *response.ErrorResponse
+	GetMatches(userID string) ([]dto.MatchResponse, *response.ErrorResponse)
 }
 
 type matchUsecase struct {
@@ -101,7 +102,7 @@ func (uc *matchUsecase) Match(req *dto.CatMatchRequest, userID string) *response
 		}
 	}
 
-	err = uc.matchRepository.MatchCat(req, userCat.OwnerId)
+	err = uc.matchRepository.MatchCat(req, userCat.OwnerId, matchCat.OwnerId)
 	if err != nil {
 		return err
 	}
@@ -235,4 +236,13 @@ func (uc *matchUsecase) Reject(req *dto.MatchApproveRequest, userID string) *res
 	uc.matchRepository.RemoveTrx()
 
 	return nil
+}
+
+func (uc *matchUsecase) GetMatches(userID string) ([]dto.MatchResponse, *response.ErrorResponse) {
+	matches, err := uc.matchRepository.FindAllByUserId(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return matches, nil
 }
