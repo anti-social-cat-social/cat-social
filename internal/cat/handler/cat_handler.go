@@ -30,10 +30,12 @@ func (h *CatHandler) Router(r *gin.RouterGroup, db *sqlx.DB) {
 	endpoint := r.Group("/cat")
 	endpoint.Use(middleware.UseJwtAuth)
 
-	endpoint.GET("", h.GetAll)
-	endpoint.PUT("/:id", h.Update)
-	endpoint.POST("/match", middleware.DBTransactionMiddleware(db), h.Match)
-	endpoint.POST("/match/approve", middleware.DBTransactionMiddleware(db), h.ApproveMatch)
+	endpoint.GET("", middleware.UseJwtAuth, h.GetAll)
+	endpoint.POST("", middleware.UseJwtAuth, h.Store)
+	endpoint.PUT("/:id", middleware.UseJwtAuth, h.Update)
+	endpoint.POST("/match", middleware.UseJwtAuth, middleware.DBTransactionMiddleware(db), h.Match)
+	endpoint.POST("/match/approve", middleware.UseJwtAuth, middleware.DBTransactionMiddleware(db), h.ApproveMatch)
+	endpoint.DELETE("/:id", middleware.UseJwtAuth, h.Delete)
 }
 
 func (h *CatHandler) GetAll(c *gin.Context) {
@@ -62,6 +64,46 @@ func (h *CatHandler) GetAll(c *gin.Context) {
 	catResponse := dto.FormatCatsResponse(cats)
 
 	response.GenerateResponse(c, http.StatusOK, response.WithMessage("success"), response.WithData(catResponse))
+}
+
+func (h *CatHandler) Store(c *gin.Context) {
+	var request dto.CatUpdateRequestBody
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		logger.Info(err.Error())
+		response.GenerateResponse(c, http.StatusBadRequest, response.WithMessage(err.Error()))
+		c.Abort()
+		return
+	}
+
+	errValidate := validate.ValidateUpdateCatForm(request)
+	if errValidate != nil {
+		response.GenerateResponse(c, 400, response.WithMessage(errValidate.Error()))
+		c.Abort()
+		return
+	}
+
+	userID := c.MustGet("userID").(string)
+
+	cat, err := h.uc.Create(request, userID)
+	if err != nil {
+		logger.Info(err.Message)
+		response.GenerateResponse(c, http.StatusBadRequest, response.WithMessage(err.Message))
+		c.Abort()
+		return
+	}
+
+	catResponse := dto.CatUpdateResponseBody{
+		ID:          cat.ID,
+		Name:        cat.Name,
+		Race:        cat.Race,
+		Sex:         cat.Sex,
+		AgeInMonth:  cat.AgeInMonth,
+		Description: cat.Description,
+		ImageUrls:   cat.ImageUrls,
+	}
+
+	response.GenerateResponse(c, http.StatusCreated, response.WithMessage("success"), response.WithData(catResponse))
 }
 
 func (h *CatHandler) Update(c *gin.Context) {
@@ -99,6 +141,20 @@ func (h *CatHandler) Update(c *gin.Context) {
 	}
 
 	response.GenerateResponse(c, http.StatusOK, response.WithMessage("Success"), response.WithData(modifiedCat))
+}
+
+func (h *CatHandler) Delete(c *gin.Context) {
+	id := c.Param("id")
+
+	userId := c.MustGet("userID").(string)
+
+	if err := h.uc.Delete(id, userId); err != nil {
+		response.GenerateResponse(c, err.Code, response.WithMessage(err.Message))
+		c.Abort()
+		return
+	}
+
+	response.GenerateResponse(c, http.StatusOK, response.WithMessage("success"))
 }
 
 func (h *CatHandler) Match(c *gin.Context) {

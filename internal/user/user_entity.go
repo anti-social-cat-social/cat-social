@@ -11,7 +11,7 @@ type User struct {
 }
 
 type UserDTO struct {
-	Name     string `json:"name" validate:"required,min=5,max=50"`
+	Name     string `json:"name" validate:"required,min=5,max=50,valid_name"`
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=5,max=15"`
 }

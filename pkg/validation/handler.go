@@ -1,6 +1,11 @@
 package validation
 
-import "github.com/go-playground/validator/v10"
+import (
+	"log"
+	"regexp"
+
+	"github.com/go-playground/validator/v10"
+)
 
 type validationError struct {
 	Field    string `json:"field"`
@@ -20,4 +25,21 @@ func GenerateStructValidationError(err error) []validationError {
 	}
 
 	return result
+}
+
+func ValidNameValidator(fl validator.FieldLevel) bool {
+	value := fl.Field().String()
+
+	// Improved regex pattern:
+	// - Allows spaces, hyphens, and apostrophes within a name part
+	// - Uses a character class for allowed characters (letters, spaces, hyphens, apostrophes)
+	pattern := `^[[:alpha:]]+(?: [[:alpha:]]+|[-\'][:alpha:]]+)*$`
+
+	// COmpile regex
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		log.Println("Error compiling regex")
+	}
+
+	return re.MatchString(value)
 }
