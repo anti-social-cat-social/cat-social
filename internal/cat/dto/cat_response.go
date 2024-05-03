@@ -8,6 +8,11 @@ import (
 	"github.com/lib/pq"
 )
 
+type CatStoreResponse struct {
+	ID        string `json:"id"`
+	CreatedAt string `json:"createdAt"`
+}
+
 type CatUpdateResponseBody struct {
 	ID          string         `json:"id"`
 	Name        string         `json:"name"`

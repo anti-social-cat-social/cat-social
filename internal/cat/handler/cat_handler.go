@@ -9,6 +9,7 @@ import (
 	"1-cat-social/pkg/response"
 	"1-cat-social/pkg/validator"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
@@ -94,14 +95,9 @@ func (h *CatHandler) Store(c *gin.Context) {
 		return
 	}
 
-	catResponse := dto.CatUpdateResponseBody{
-		ID:          cat.ID,
-		Name:        cat.Name,
-		Race:        cat.Race,
-		Sex:         cat.Sex,
-		AgeInMonth:  cat.AgeInMonth,
-		Description: cat.Description,
-		ImageUrls:   cat.ImageUrls,
+	catResponse := dto.CatStoreResponse{
+		ID:        cat.ID,
+		CreatedAt: cat.CreatedAt.Format(time.RFC3339),
 	}
 
 	response.GenerateResponse(c, http.StatusCreated, response.WithMessage("success"), response.WithData(catResponse))
