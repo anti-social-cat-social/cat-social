@@ -11,6 +11,7 @@ import (
 type IMatchUsecase interface {
 	WithTrx(*sqlx.Tx) *matchUsecase
 	Match(req *dto.CatMatchRequest, userID string) *response.ErrorResponse
+	Approve(req *dto.MatchApproveRequest, userID string) *response.ErrorResponse
 }
 
 type matchUsecase struct {
@@ -85,31 +86,76 @@ func (uc *matchUsecase) Match(req *dto.CatMatchRequest, userID string) *response
 		}
 	}
 
-	// update hasMatched to true
-	matchCat.HasMatched = true
-	userCat.HasMatched = true
-
-	_, err = uc.catRepository.Update(*userCat)
-	if err != nil {
-		return &response.ErrorResponse{
-			Code:    500,
-			Err:     "Internal Server Error",
-			Message: err.Error(),
-		}
-	}
-
-	_, err = uc.catRepository.Update(*matchCat)
-	if err != nil {
-		return &response.ErrorResponse{
-			Code:    500,
-			Err:     "Internal Server Error",
-			Message: err.Error(),
-		}
-	}
-
 	err = uc.matchRepository.MatchCat(req, userCat.OwnerId)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (uc *matchUsecase) Approve(req *dto.MatchApproveRequest, userID string) *response.ErrorResponse {
+	// check if matchId is exist
+	match, err := uc.matchRepository.FindById(req.MatchId)
+	if err != nil {
+		return err
+	}
+
+	if match.IsDeleted {
+		return &response.ErrorResponse{
+			Code:    400,
+			Err:     "Match is no longer valid",
+			Message: "error",
+		}
+	}
+
+	targetCat, err := uc.catRepository.FindById(match.TargetCatId)
+	if err != nil {
+		return err
+	}
+
+	if targetCat.OwnerId != userID {
+		return &response.ErrorResponse{
+			Code:    403,
+			Err:     "You are not the owner of the cat",
+			Message: "error",
+		}
+	}
+
+	err = uc.matchRepository.ApproveMatch(req.MatchId)
+	if err != nil {
+		return err
+	}
+
+	err = uc.matchRepository.DeleteMatch(match.IssuerCatId, match.TargetCatId, req.MatchId)
+	if err != nil {
+		return err
+	}
+
+	issuerCat, err := uc.catRepository.FindById(match.IssuerCatId)
+	if err != nil {
+		return err
+	}
+	// update hasMatched to true
+	issuerCat.HasMatched = true
+	targetCat.HasMatched = true
+
+	_, err = uc.catRepository.Update(*issuerCat)
+	if err != nil {
+		return &response.ErrorResponse{
+			Code:    500,
+			Err:     "Internal Server Error",
+			Message: err.Error(),
+		}
+	}
+
+	_, err = uc.catRepository.Update(*targetCat)
+	if err != nil {
+		return &response.ErrorResponse{
+			Code:    500,
+			Err:     "Internal Server Error",
+			Message: err.Error(),
+		}
 	}
 
 	return nil
