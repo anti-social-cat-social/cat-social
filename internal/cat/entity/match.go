@@ -6,8 +6,8 @@ import (
 
 type Match struct {
 	ID          string
-	IssuerCatId string
-	TargetCatId string
+	IssuerCatId string `db:"issuer_cat_id"`
+	TargetCatId string `db:"target_cat_id"`
 	Message     string
 	Status      MatchStatus
 	CreatedAt   time.Time

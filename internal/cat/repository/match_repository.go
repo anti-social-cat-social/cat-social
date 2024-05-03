@@ -6,12 +6,17 @@ import (
 	entity "1-cat-social/internal/cat/entity"
 	"1-cat-social/pkg/logger"
 	response "1-cat-social/pkg/response"
+	"database/sql"
+	"errors"
 
 	"github.com/jmoiron/sqlx"
 )
 
 type IMatchRepository interface {
 	MatchCat(req *dto.CatMatchRequest, issuerID string) *response.ErrorResponse
+	FindById(id string) (*entity.Match, *response.ErrorResponse)
+	DeleteMatch(issuerCatID, targetCatID string, matchID string) *response.ErrorResponse
+	ApproveMatch(matchID string) *response.ErrorResponse
 	WithTrx(trxHandle *sqlx.Tx) *matchRepository
 }
 
@@ -66,6 +71,54 @@ func (repo *matchRepository) MatchCat(req *dto.CatMatchRequest, issuerID string)
 			Code:    500,
 			Err:     "Internal Server Error",
 			Message: "Failed to insert match",
+		}
+	}
+
+	return nil
+}
+
+func (repo *matchRepository) FindById(id string) (*entity.Match, *response.ErrorResponse) {
+	match := entity.Match{}
+
+	err := repo.getDB().Get(&match, "SELECT * FROM matches WHERE id = $1", id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, &response.ErrorResponse{
+				Code:    404,
+				Err:     "Match not found",
+				Message: err.Error(),
+			}
+		}
+		return nil, &response.ErrorResponse{
+			Code:    500,
+			Err:     "Internal Server Error",
+			Message: err.Error(),
+		}
+	}
+
+	return &match, nil
+}
+
+func (repo *matchRepository) DeleteMatch(issuerCatID, targetCatID string, matchID string) *response.ErrorResponse {
+	_, err := repo.getDB().Exec(`UPDATE matches SET isdeleted = true WHERE id != $3 AND (issuer_cat_id = $1 OR target_cat_id = $1 OR issuer_cat_id = $2 OR target_cat_id = $2)`, issuerCatID, targetCatID, matchID)
+	if err != nil {
+		return &response.ErrorResponse{
+			Code:    500,
+			Err:     "Internal Server Error",
+			Message: err.Error(),
+		}
+	}
+
+	return nil
+}
+
+func (repo *matchRepository) ApproveMatch(matchID string) *response.ErrorResponse {
+	_, err := repo.getDB().Exec(`UPDATE matches SET status = $1 WHERE id = $2`, entity.Approved, matchID)
+	if err != nil {
+		return &response.ErrorResponse{
+			Code:    500,
+			Err:     "Internal Server Error",
+			Message: err.Error(),
 		}
 	}
 
