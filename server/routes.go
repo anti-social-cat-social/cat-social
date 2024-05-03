@@ -27,7 +27,7 @@ func NewRoute(engine *gin.Engine, db *sqlx.DB) {
 func initializeCatHandler(router *gin.RouterGroup, db *sqlx.DB) {
 	catRepository := cr.NewCatRepository(db)
 	matchRepository := cr.NewMatchRepository(db)
-	catUsecase := catUseCase.NewCatUsecase(catRepository)
+	catUsecase := catUseCase.NewCatUsecase(catRepository, matchRepository)
 	matchUsecase := catUseCase.NewMatchUsecase(catRepository, matchRepository)
 	catHandler := catHandler.NewCatHandler(catUsecase, matchUsecase)
 	catHandler.Router(router, db)

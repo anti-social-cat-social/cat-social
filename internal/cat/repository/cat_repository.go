@@ -22,6 +22,7 @@ type ICatRepository interface {
 	FindById(id string) (*entity.Cat, *response.ErrorResponse)
 	Update(entity entity.Cat) (*entity.Cat, *response.ErrorResponse)
 	WithTrx(*sqlx.Tx) *catRepository
+	RemoveTrx()
 	IsCatExist(id string) error
 	Create(entity entity.Cat) (*entity.Cat, *localError.GlobalError)
 	Delete(entity entity.Cat) *localError.GlobalError
@@ -53,6 +54,10 @@ func (repo *catRepository) WithTrx(trxHandle *sqlx.Tx) *catRepository {
 	}
 	repo.tXdb = trxHandle
 	return repo
+}
+
+func (repo *catRepository) RemoveTrx() {
+	repo.tXdb = nil
 }
 
 func (repo *catRepository) FindAll(queryParam *dto.CatRequestQueryParams, userID string) ([]*entity.Cat, *response.ErrorResponse) {

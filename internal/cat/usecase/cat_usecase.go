@@ -17,12 +17,14 @@ type ICatUsecase interface {
 }
 
 type CatUsecase struct {
-	repo repo.ICatRepository
+	repo            repo.ICatRepository
+	matchRepository repo.IMatchRepository
 }
 
-func NewCatUsecase(repo repo.ICatRepository) ICatUsecase {
+func NewCatUsecase(repo repo.ICatRepository, mr repo.IMatchRepository) ICatUsecase {
 	return &CatUsecase{
-		repo: repo,
+		repo:            repo,
+		matchRepository: mr,
 	}
 }
 
@@ -59,6 +61,19 @@ func (uc *CatUsecase) Update(id string, input dto.CatUpdateRequestBody) (*entity
 		return nil, &response.ErrorResponse{
 			Code:    400,
 			Err:     "Can't update cat that already matched",
+			Message: "error",
+		}
+	}
+
+	match, err := uc.matchRepository.FindByCatId(cat.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	if match.ID != "" {
+		return nil, &response.ErrorResponse{
+			Code:    400,
+			Err:     "Can't update cat that already requested to match",
 			Message: "error",
 		}
 	}

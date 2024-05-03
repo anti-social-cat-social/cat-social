@@ -88,12 +88,12 @@ func (uc *matchUsecase) Match(req *dto.CatMatchRequest, userID string) *response
 		}
 	}
 
-	match, err := uc.matchRepository.FindByCatID(req.UserCatId, req.MatchCatId)
+	isMatched, err := uc.matchRepository.IsCatAlreadyMatched(req.UserCatId, req.MatchCatId)
 	if err != nil {
 		return err
 	}
 
-	if match.ID != "" {
+	if isMatched {
 		return &response.ErrorResponse{
 			Code:    400,
 			Err:     "Cat already requested to match",
@@ -105,6 +105,9 @@ func (uc *matchUsecase) Match(req *dto.CatMatchRequest, userID string) *response
 	if err != nil {
 		return err
 	}
+
+	uc.catRepository.RemoveTrx()
+	uc.matchRepository.RemoveTrx()
 
 	return nil
 }
@@ -181,6 +184,9 @@ func (uc *matchUsecase) Approve(req *dto.MatchApproveRequest, userID string) *re
 		}
 	}
 
+	uc.catRepository.RemoveTrx()
+	uc.matchRepository.RemoveTrx()
+
 	return nil
 }
 
@@ -224,6 +230,9 @@ func (uc *matchUsecase) Reject(req *dto.MatchApproveRequest, userID string) *res
 	if err != nil {
 		return err
 	}
+
+	uc.catRepository.RemoveTrx()
+	uc.matchRepository.RemoveTrx()
 
 	return nil
 }

@@ -15,11 +15,13 @@ import (
 type IMatchRepository interface {
 	MatchCat(req *dto.CatMatchRequest, issuerID string) *response.ErrorResponse
 	FindById(id string) (*entity.Match, *response.ErrorResponse)
-	FindByCatID(userCatId, targetCatId string) (entity.Match, *response.ErrorResponse)
+	IsCatAlreadyMatched(userCatId, targetCatId string) (bool, *response.ErrorResponse)
+	FindByCatId(id string) (entity.Match, *response.ErrorResponse)
 	DeleteMatch(issuerCatID, targetCatID string, matchID string) *response.ErrorResponse
 	ApproveMatch(matchID string) *response.ErrorResponse
 	RejectMatch(matchID string) *response.ErrorResponse
 	WithTrx(trxHandle *sqlx.Tx) *matchRepository
+	RemoveTrx()
 }
 
 type matchRepository struct {
@@ -48,6 +50,10 @@ func (repo *matchRepository) WithTrx(trxHandle *sqlx.Tx) *matchRepository {
 	}
 	repo.tXdb = trxHandle
 	return repo
+}
+
+func (repo *matchRepository) RemoveTrx() {
+	repo.tXdb = nil
 }
 
 func (repo *matchRepository) MatchCat(req *dto.CatMatchRequest, issuerID string) *response.ErrorResponse {
@@ -101,10 +107,31 @@ func (repo *matchRepository) FindById(id string) (*entity.Match, *response.Error
 	return &match, nil
 }
 
-func (repo *matchRepository) FindByCatID(userCatId, targetCatId string) (entity.Match, *response.ErrorResponse) {
+func (repo *matchRepository) IsCatAlreadyMatched(userCatId, targetCatId string) (bool, *response.ErrorResponse) {
 	match := entity.Match{}
 
 	err := repo.getDB().Get(&match, `SELECT * FROM matches WHERE (issuer_cat_id = $1 AND target_cat_id = $2)`, userCatId, targetCatId)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return false, &response.ErrorResponse{
+				Code:    500,
+				Err:     "Internal Server Error",
+				Message: err.Error(),
+			}
+		}
+	}
+
+	if match.ID == "" {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func (repo *matchRepository) FindByCatId(id string) (entity.Match, *response.ErrorResponse) {
+	match := entity.Match{}
+
+	err := repo.getDB().Get(&match, `SELECT * FROM matches WHERE (issuer_cat_id = $1 OR target_cat_id = $1)`, id)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			return match, &response.ErrorResponse{

@@ -122,7 +122,7 @@ func (h *CatHandler) Update(c *gin.Context) {
 
 	cat, err := h.uc.Update(id, request)
 	if err != nil {
-		response.GenerateResponse(c, err.Code, response.WithMessage(err.Message))
+		response.GenerateResponse(c, err.Code, response.WithMessage(err.Err))
 		c.Abort()
 		return
 	}
