@@ -2,6 +2,7 @@ package cat
 
 import (
 	dto "1-cat-social/internal/cat/dto"
+	entity "1-cat-social/internal/cat/entity"
 	repo "1-cat-social/internal/cat/repository"
 	"1-cat-social/pkg/response"
 
@@ -12,6 +13,7 @@ type IMatchUsecase interface {
 	WithTrx(*sqlx.Tx) *matchUsecase
 	Match(req *dto.CatMatchRequest, userID string) *response.ErrorResponse
 	Approve(req *dto.MatchApproveRequest, userID string) *response.ErrorResponse
+	Reject(req *dto.MatchApproveRequest, userID string) *response.ErrorResponse
 }
 
 type matchUsecase struct {
@@ -109,6 +111,14 @@ func (uc *matchUsecase) Approve(req *dto.MatchApproveRequest, userID string) *re
 		}
 	}
 
+	if match.Status != entity.Submitted {
+		return &response.ErrorResponse{
+			Code:    400,
+			Err:     "Match is no longer valid",
+			Message: "error",
+		}
+	}
+
 	targetCat, err := uc.catRepository.FindById(match.TargetCatId)
 	if err != nil {
 		return err
@@ -156,6 +166,50 @@ func (uc *matchUsecase) Approve(req *dto.MatchApproveRequest, userID string) *re
 			Err:     "Internal Server Error",
 			Message: err.Error(),
 		}
+	}
+
+	return nil
+}
+
+func (uc *matchUsecase) Reject(req *dto.MatchApproveRequest, userID string) *response.ErrorResponse {
+	// check if matchId is exist
+	match, err := uc.matchRepository.FindById(req.MatchId)
+	if err != nil {
+		return err
+	}
+
+	if match.IsDeleted {
+		return &response.ErrorResponse{
+			Code:    400,
+			Err:     "Match is no longer valid",
+			Message: "error",
+		}
+	}
+
+	if match.Status != entity.Submitted {
+		return &response.ErrorResponse{
+			Code:    400,
+			Err:     "Match is no longer valid",
+			Message: "error",
+		}
+	}
+
+	targetCat, err := uc.catRepository.FindById(match.TargetCatId)
+	if err != nil {
+		return err
+	}
+
+	if targetCat.OwnerId != userID {
+		return &response.ErrorResponse{
+			Code:    403,
+			Err:     "You are not the owner of the cat",
+			Message: "error",
+		}
+	}
+
+	err = uc.matchRepository.RejectMatch(req.MatchId)
+	if err != nil {
+		return err
 	}
 
 	return nil
