@@ -14,5 +14,6 @@ CREATE TABLE matches (
     status match_statuses NOT NULL,
     createdAt TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     isDeleted BOOLEAN DEFAULT FALSE,
-    issuedBy UUID NOT NULL REFERENCES users(id)
+    issuedBy UUID NOT NULL REFERENCES users(id),
+    target_cat_owner UUID NOT NULL REFERENCES users(id)
 );

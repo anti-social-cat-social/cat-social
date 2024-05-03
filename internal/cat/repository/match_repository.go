@@ -13,7 +13,7 @@ import (
 )
 
 type IMatchRepository interface {
-	MatchCat(req *dto.CatMatchRequest, issuerID string) *response.ErrorResponse
+	MatchCat(req *dto.CatMatchRequest, issuerID, targetOwnerID string) *response.ErrorResponse
 	FindById(id string) (*entity.Match, *response.ErrorResponse)
 	IsCatAlreadyMatched(userCatId, targetCatId string) (bool, *response.ErrorResponse)
 	FindByCatId(id string) (entity.Match, *response.ErrorResponse)
@@ -22,6 +22,7 @@ type IMatchRepository interface {
 	RejectMatch(matchID string) *response.ErrorResponse
 	WithTrx(trxHandle *sqlx.Tx) *matchRepository
 	RemoveTrx()
+	FindAllByUserId(userId string) ([]dto.MatchResponse, *response.ErrorResponse)
 }
 
 type matchRepository struct {
@@ -56,16 +57,17 @@ func (repo *matchRepository) RemoveTrx() {
 	repo.tXdb = nil
 }
 
-func (repo *matchRepository) MatchCat(req *dto.CatMatchRequest, issuerID string) *response.ErrorResponse {
+func (repo *matchRepository) MatchCat(req *dto.CatMatchRequest, issuerID, targetOwnerId string) *response.ErrorResponse {
 	payload := map[string]interface{}{
-		"usercatid":  req.UserCatId,
-		"matchcatid": req.MatchCatId,
-		"message":    req.Message,
-		"status":     entity.Submitted,
-		"issuedby":   issuerID,
+		"usercatid":        req.UserCatId,
+		"matchcatid":       req.MatchCatId,
+		"message":          req.Message,
+		"status":           entity.Submitted,
+		"issuedby":         issuerID,
+		"target_cat_owner": targetOwnerId,
 	}
 
-	res, err := repo.getDB().NamedExec(`INSERT INTO matches (issuer_cat_id, target_cat_id, message, status, issuedby) VALUES (:usercatid,:matchcatid,:message,:status,:issuedby) RETURNING id`, payload)
+	res, err := repo.getDB().NamedExec(`INSERT INTO matches (issuer_cat_id, target_cat_id, message, status, issuedby, target_cat_owner) VALUES (:usercatid,:matchcatid,:message,:status,:issuedby,:target_cat_owner) RETURNING id`, payload)
 	if err != nil {
 		return &response.ErrorResponse{
 			Code:    500,
@@ -182,4 +184,56 @@ func (repo *matchRepository) RejectMatch(matchID string) *response.ErrorResponse
 	}
 
 	return nil
+}
+
+func (repo *matchRepository) FindAllByUserId(userId string) ([]dto.MatchResponse, *response.ErrorResponse) {
+	matches := []dto.MatchResponse{}
+
+	query := `
+        SELECT
+		m.id AS id,
+		iss.name AS "issuedBy.name",
+		iss.email AS "issuedBy.email",
+		iss.createdat AS "issuedBy.createdat",
+		catTar.id AS "matchCatDetail.id",
+		catTar.name AS "matchCatDetail.name",
+		catTar.race AS "matchCatDetail.race",
+		catTar.sex AS "matchCatDetail.sex",
+		catTar.description AS "matchCatDetail.description",
+		catTar.ageinmonth AS "matchCatDetail.ageinmonth",
+		catTar.imageurls AS "matchCatDetail.imageurls",
+		catTar.hasmatched AS "matchCatDetail.hasmatched",
+		catTar.createdat AS "matchCatDetail.createdat",
+		catIss.id AS "userCatDetail.id",
+		catIss.name AS "userCatDetail.name",
+		catIss.race AS "userCatDetail.race",
+		catIss.sex AS "userCatDetail.sex",
+		catIss.description AS "userCatDetail.description",
+		catIss.ageinmonth AS "userCatDetail.ageinmonth",
+		catIss.imageurls AS "userCatDetail.imageurls",
+		catIss.hasmatched AS "userCatDetail.hasmatched",
+		catIss.createdat AS "userCatDetail.createdat",
+		m.message AS message,
+		m.createdat AS createdat
+	FROM
+		matches m
+		JOIN cats catIss ON m.issuer_cat_id = catIss.id
+		JOIN users iss ON m.issuedby = iss.id
+		JOIN cats catTar ON m.target_cat_id = catTar.id
+		JOIN users tar ON m.target_cat_owner = tar.id
+	WHERE
+		m.issuedby = $1
+		or m.target_cat_owner = $1;
+    `
+	// Queryx is used here as it handles scanning into structs automatically
+	err := repo.db.Select(&matches, query, userId)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, &response.ErrorResponse{
+			Code:    500,
+			Err:     "Internal Server Error",
+			Message: err.Error(),
+		}
+	}
+
+	return matches, nil
 }

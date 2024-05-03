@@ -13,7 +13,7 @@ type Cat struct {
 	Sex         Sex            `json:"sex"`
 	AgeInMonth  int            `json:"ageInMonth" db:"ageinmonth"`
 	Description string         `json:"description"`
-	HasMatched  bool           `json:"hasMatched"`
+	HasMatched  bool           `json:"hasMatched" db:"hasmatched"`
 	ImageUrls   pq.StringArray `json:"imageUrls" db:"imageurls"`
 	CreatedAt   time.Time      `json:"createdAt"`
 	IsDeleted   bool           `json:"isDeleted"`

@@ -34,6 +34,7 @@ func (h *CatHandler) Router(r *gin.RouterGroup, db *sqlx.DB) {
 	endpoint.GET("", middleware.UseJwtAuth, h.GetAll)
 	endpoint.POST("", middleware.UseJwtAuth, h.Store)
 	endpoint.PUT("/:id", middleware.UseJwtAuth, h.Update)
+	endpoint.GET("/match", middleware.UseJwtAuth, h.GetMatches)
 	endpoint.POST("/match", middleware.UseJwtAuth, middleware.DBTransactionMiddleware(db), h.Match)
 	endpoint.POST("/match/approve", middleware.UseJwtAuth, middleware.DBTransactionMiddleware(db), h.ApproveMatch)
 	endpoint.DELETE("/:id", middleware.UseJwtAuth, h.Delete)
@@ -231,4 +232,21 @@ func (h *CatHandler) RejectMatch(c *gin.Context) {
 	}
 
 	response.GenerateResponse(c, http.StatusOK, response.WithMessage("success"))
+}
+
+func (h *CatHandler) GetMatches(c *gin.Context) {
+	userID := c.MustGet("userID").(string)
+
+	matches, err := h.mc.GetMatches(userID)
+	if err != nil {
+		if err.Code == http.StatusInternalServerError {
+			logger.Error(err)
+		} else {
+			logger.Info(err.Err)
+		}
+		response.GenerateResponse(c, err.Code, response.WithMessage(err.Err))
+		return
+	}
+
+	response.GenerateResponse(c, http.StatusOK, response.WithMessage("success"), response.WithData(matches))
 }
