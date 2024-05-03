@@ -206,7 +206,7 @@ func addAgeInMonthFilter(query string, ageInMonth string) string {
 		if strings.Contains(ageInMonth, ">") || strings.Contains(ageInMonth, "<") {
 			query += fmt.Sprintf(" AND ageinmonth %s", ageInMonth)
 		} else {
-			query += fmt.Sprintf(" AND ageinmonth = %s", ageInMonth)
+			query += fmt.Sprintf(" AND ageinmonth %s", ageInMonth)
 		}
 	}
 	return query

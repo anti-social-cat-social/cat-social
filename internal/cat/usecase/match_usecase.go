@@ -88,6 +88,19 @@ func (uc *matchUsecase) Match(req *dto.CatMatchRequest, userID string) *response
 		}
 	}
 
+	match, err := uc.matchRepository.FindByCatID(req.UserCatId, req.MatchCatId)
+	if err != nil {
+		return err
+	}
+
+	if match.ID != "" {
+		return &response.ErrorResponse{
+			Code:    400,
+			Err:     "Cat already requested to match",
+			Message: "error",
+		}
+	}
+
 	err = uc.matchRepository.MatchCat(req, userCat.OwnerId)
 	if err != nil {
 		return err

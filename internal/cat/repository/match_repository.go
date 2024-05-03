@@ -15,6 +15,7 @@ import (
 type IMatchRepository interface {
 	MatchCat(req *dto.CatMatchRequest, issuerID string) *response.ErrorResponse
 	FindById(id string) (*entity.Match, *response.ErrorResponse)
+	FindByCatID(userCatId, targetCatId string) (entity.Match, *response.ErrorResponse)
 	DeleteMatch(issuerCatID, targetCatID string, matchID string) *response.ErrorResponse
 	ApproveMatch(matchID string) *response.ErrorResponse
 	RejectMatch(matchID string) *response.ErrorResponse
@@ -98,6 +99,23 @@ func (repo *matchRepository) FindById(id string) (*entity.Match, *response.Error
 	}
 
 	return &match, nil
+}
+
+func (repo *matchRepository) FindByCatID(userCatId, targetCatId string) (entity.Match, *response.ErrorResponse) {
+	match := entity.Match{}
+
+	err := repo.getDB().Get(&match, `SELECT * FROM matches WHERE (issuer_cat_id = $1 AND target_cat_id = $2)`, userCatId, targetCatId)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return match, &response.ErrorResponse{
+				Code:    500,
+				Err:     "Internal Server Error",
+				Message: err.Error(),
+			}
+		}
+	}
+
+	return match, nil
 }
 
 func (repo *matchRepository) DeleteMatch(issuerCatID, targetCatID string, matchID string) *response.ErrorResponse {
