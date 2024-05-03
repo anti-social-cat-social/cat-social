@@ -40,7 +40,8 @@ func FormatCatResponse(cat *cat.Cat) CatResponse {
 }
 
 func FormatCatsResponse(cats []*cat.Cat) []CatResponse {
-	var catsResponse []CatResponse
+	catsResponse := []CatResponse{}
+
 	for _, cat := range cats {
 		catResponse := FormatCatResponse(cat)
 		catsResponse = append(catsResponse, catResponse)
