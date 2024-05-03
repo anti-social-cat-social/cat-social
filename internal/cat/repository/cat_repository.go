@@ -4,13 +4,16 @@ import (
 	"1-cat-social/config"
 	dto "1-cat-social/internal/cat/dto"
 	entity "1-cat-social/internal/cat/entity"
+	localError "1-cat-social/pkg/error"
 	"1-cat-social/pkg/logger"
 	response "1-cat-social/pkg/response"
 	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -20,6 +23,8 @@ type ICatRepository interface {
 	Update(entity entity.Cat) (*entity.Cat, *response.ErrorResponse)
 	WithTrx(*sqlx.Tx) *catRepository
 	IsCatExist(id string) error
+	Create(entity entity.Cat) (*entity.Cat, *localError.GlobalError)
+	Delete(entity entity.Cat) *localError.GlobalError
 }
 
 type catRepository struct {
@@ -76,7 +81,6 @@ func (repo *catRepository) IsCatExist(id string) error {
 	var cat entity.Cat
 
 	err := repo.db.Get(cat, "SELECT * FROM cats WHERE id = $1", id)
-
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return fmt.Errorf("cat with ID %s does not exist", id)
@@ -89,7 +93,7 @@ func (repo *catRepository) IsCatExist(id string) error {
 func (repo *catRepository) FindById(id string) (*entity.Cat, *response.ErrorResponse) {
 	cat := &entity.Cat{}
 
-	err := repo.getDB().Get(cat, "SELECT * FROM cats WHERE id = $1", id)
+	err := repo.getDB().Get(cat, "SELECT * FROM cats WHERE id = $1 and isdeleted is false", id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, &response.ErrorResponse{
@@ -108,12 +112,30 @@ func (repo *catRepository) FindById(id string) (*entity.Cat, *response.ErrorResp
 	return cat, nil
 }
 
+// Store new cat data
+func (repo *catRepository) Create(cat entity.Cat) (*entity.Cat, *localError.GlobalError) {
+	// Generate UUID
+	catId := uuid.NewString()
+	cat.ID = catId
+
+	// Craeted tim generator
+	createdAt := time.Now()
+	cat.CreatedAt = createdAt
+
+	query := "INSERT INTO cats (id,name, race, sex,ageinmonth,description,imageurls,hasmatched,ownerid,createdat) values (:id,:name, :race,:sex,:ageinmonth,:description,:imageurls,:hasmatched,:ownerid,:createdat)"
+	_, err := repo.getDB().NamedExec(query, &cat)
+	if err != nil {
+		return nil, localError.ErrInternalServer(err.Error(), err)
+	}
+
+	return &cat, nil
+}
+
 func (repo *catRepository) Update(cat entity.Cat) (*entity.Cat, *response.ErrorResponse) {
 	var err error
 
 	query := "UPDATE cats SET name = $1, race = $2, sex = $3, ageInMonth = $4, description = $5, imageUrls = $6, hasmatched = $7 WHERE id = $8"
 	_, err = repo.getDB().Exec(query, cat.Name, cat.Race, cat.Sex, cat.AgeInMonth, cat.Description, cat.ImageUrls, cat.HasMatched, cat.ID)
-
 	if err != nil {
 		return nil, &response.ErrorResponse{
 			Code:    500,
@@ -123,6 +145,14 @@ func (repo *catRepository) Update(cat entity.Cat) (*entity.Cat, *response.ErrorR
 	}
 
 	return &cat, nil
+}
+
+func (repo *catRepository) Delete(cat entity.Cat) *localError.GlobalError {
+	_, err := repo.getDB().Exec("UPDATE cats set isdeleted = true where id = $1", cat.ID)
+	if err != nil {
+		return localError.ErrInternalServer(err.Error(), err)
+	}
+	return nil
 }
 
 func (repo *catRepository) generateFilterCatQuery(queryParam *dto.CatRequestQueryParams) string {

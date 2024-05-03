@@ -7,7 +7,7 @@ import (
 )
 
 type CatUpdateRequestBody struct {
-	Name        string         `json:"name" validate:"required,min=1,max=30"`
+	Name        string         `json:"name" validate:"required,min=1,max=30,valid_name"`
 	Race        cat.Race       `json:"race" validate:"required,oneof=Persian Siamese Ragdoll Bengal Sphynx Abyssinian Birman 'Scottish Fold' 'Maine Coon' 'British Shorthair'"`
 	Sex         cat.Sex        `json:"sex" validate:"required,oneof=male female"`
 	AgeInMonth  int            `json:"ageInMonth" validate:"required,min=1,max=120082"`

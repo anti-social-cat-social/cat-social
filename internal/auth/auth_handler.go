@@ -79,6 +79,12 @@ func (h *authHandler) register(ctx *gin.Context) {
 	// Validate request
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
+	// Register custom validation
+	errValidation := validate.RegisterValidation("valid_name", validation.ValidNameValidator)
+	if errValidation != nil {
+		response.GenerateResponse(ctx, http.StatusInternalServerError, response.WithMessage("Failed register validation"))
+	}
+
 	// Generate error validation if not any field is not valid
 	if err := validate.Struct(request); err != nil {
 		validatorMessage := validation.GenerateStructValidationError(err)
