@@ -30,7 +30,7 @@ func initializeCatHandler(router *gin.RouterGroup, db *sqlx.DB) {
 	catUsecase := catUseCase.NewCatUsecase(catRepository)
 	matchUsecase := catUseCase.NewMatchUsecase(catRepository, matchRepository)
 	catHandler := catHandler.NewCatHandler(catUsecase, matchUsecase)
-	catHandler.Router(router)
+	catHandler.Router(router, db)
 }
 
 func initializeAuthHandler(db *sqlx.DB, router *gin.RouterGroup) {

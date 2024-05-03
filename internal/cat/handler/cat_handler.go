@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
 )
 
 type CatHandler struct {
@@ -25,13 +26,13 @@ func NewCatHandler(uc uc.ICatUsecase, mc uc.IMatchUsecase) *CatHandler {
 	}
 }
 
-func (h *CatHandler) Router(r *gin.RouterGroup) {
+func (h *CatHandler) Router(r *gin.RouterGroup, db *sqlx.DB) {
 	endpoint := r.Group("/cat")
 	endpoint.Use(middleware.UseJwtAuth)
 
 	endpoint.GET("", h.GetAll)
 	endpoint.PUT("/:id", h.Update)
-	endpoint.POST("/match", h.Match)
+	endpoint.POST("/match", middleware.DBTransactionMiddleware(db), h.Match)
 }
 
 func (h *CatHandler) GetAll(c *gin.Context) {
@@ -109,7 +110,9 @@ func (h *CatHandler) Match(c *gin.Context) {
 	}
 
 	userID := c.MustGet("userID").(string)
-	err := h.mc.Match(&request, userID)
+	txHandle := c.MustGet("db_trx").(*sqlx.Tx)
+
+	err := h.mc.WithTrx(txHandle).Match(&request, userID)
 	if err != nil {
 		if err.Code == http.StatusInternalServerError {
 			logger.Error(err)

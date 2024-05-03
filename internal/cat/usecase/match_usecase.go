@@ -4,25 +4,34 @@ import (
 	dto "1-cat-social/internal/cat/dto"
 	repo "1-cat-social/internal/cat/repository"
 	"1-cat-social/pkg/response"
+
+	"github.com/jmoiron/sqlx"
 )
 
 type IMatchUsecase interface {
+	WithTrx(*sqlx.Tx) *matchUsecase
 	Match(req *dto.CatMatchRequest, userID string) *response.ErrorResponse
 }
 
-type MatchUsecase struct {
+type matchUsecase struct {
 	catRepository   repo.ICatRepository
 	matchRepository repo.IMatchRepository
 }
 
 func NewMatchUsecase(cr repo.ICatRepository, mr repo.IMatchRepository) IMatchUsecase {
-	return &MatchUsecase{
+	return &matchUsecase{
 		catRepository:   cr,
 		matchRepository: mr,
 	}
 }
 
-func (uc *MatchUsecase) Match(req *dto.CatMatchRequest, userID string) *response.ErrorResponse {
+func (uc *matchUsecase) WithTrx(trxHandle *sqlx.Tx) *matchUsecase {
+	uc.catRepository = uc.catRepository.WithTrx(trxHandle)
+	uc.matchRepository = uc.matchRepository.WithTrx(trxHandle)
+	return uc
+}
+
+func (uc *matchUsecase) Match(req *dto.CatMatchRequest, userID string) *response.ErrorResponse {
 	// check if matchCatId and userCatId is exist
 	matchCat, err := uc.catRepository.FindById(req.MatchCatId)
 	if err != nil {
@@ -80,17 +89,27 @@ func (uc *MatchUsecase) Match(req *dto.CatMatchRequest, userID string) *response
 	matchCat.HasMatched = true
 	userCat.HasMatched = true
 
-	matched, err := uc.matchRepository.MatchCat(userCat, matchCat, req.Message)
+	_, err = uc.catRepository.Update(*userCat)
 	if err != nil {
-		return err
-	}
-
-	if matched.ID == "" {
 		return &response.ErrorResponse{
 			Code:    500,
 			Err:     "Internal Server Error",
-			Message: "failed to match cat",
+			Message: err.Error(),
 		}
+	}
+
+	_, err = uc.catRepository.Update(*matchCat)
+	if err != nil {
+		return &response.ErrorResponse{
+			Code:    500,
+			Err:     "Internal Server Error",
+			Message: err.Error(),
+		}
+	}
+
+	err = uc.matchRepository.MatchCat(req, userCat.OwnerId)
+	if err != nil {
+		return err
 	}
 
 	return nil
