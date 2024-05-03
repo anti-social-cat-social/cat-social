@@ -39,7 +39,7 @@ func (h *authHandler) login(ctx *gin.Context) {
 	// Parse request body to DTO
 	// If error return error response
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		response.GenerateResponse(ctx, 500)
+		response.GenerateResponse(ctx, 400)
 		ctx.Abort()
 		return
 	}
@@ -71,7 +71,7 @@ func (h *authHandler) register(ctx *gin.Context) {
 	var request user.UserDTO
 
 	if err := ctx.ShouldBindJSON(&request); err != nil {
-		response.GenerateResponse(ctx, 500)
+		response.GenerateResponse(ctx, 400)
 		ctx.Abort()
 		return
 	}

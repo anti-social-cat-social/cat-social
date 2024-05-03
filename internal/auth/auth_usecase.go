@@ -36,7 +36,7 @@ func (a *authUsecase) Login(dto user.LoginDTO) (*authResponse, *localError.Globa
 	// Compare user password with stored password
 	err := hasher.CheckPassword(result.Password, dto.Password)
 	if err != nil {
-		return nil, localError.ErrUnauthorized("Credential not valid", err)
+		return nil, localError.ErrBase(400, "Credential not valid", err)
 	}
 
 	// Generate token if no error happened above
