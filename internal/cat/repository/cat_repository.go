@@ -131,7 +131,7 @@ func (repo *CatRepository) generateFilterCatQuery(queryParam *dto.CatRequestQuer
 		}
 	}
 	if queryParam.Search != "" {
-		query += fmt.Sprintf(" AND name LIKE '%%%s%%'", queryParam.Search)
+		query += fmt.Sprintf(" AND name ILIKE '%%%s%%'", queryParam.Search)
 	}
 
 	query += " ORDER BY createdat DESC"
