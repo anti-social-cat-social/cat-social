@@ -34,6 +34,7 @@ func (h *CatHandler) Router(r *gin.RouterGroup, db *sqlx.DB) {
 	endpoint.PUT("/:id", h.Update)
 	endpoint.POST("/match", middleware.DBTransactionMiddleware(db), h.Match)
 	endpoint.POST("/match/approve", middleware.DBTransactionMiddleware(db), h.ApproveMatch)
+	endpoint.POST("/match/reject", middleware.DBTransactionMiddleware(db), h.RejectMatch)
 }
 
 func (h *CatHandler) GetAll(c *gin.Context) {
@@ -140,6 +141,32 @@ func (h *CatHandler) ApproveMatch(c *gin.Context) {
 	txHandle := c.MustGet("db_trx").(*sqlx.Tx)
 
 	err := h.mc.WithTrx(txHandle).Approve(&request, userID)
+	if err != nil {
+		if err.Code == http.StatusInternalServerError {
+			logger.Error(err)
+		} else {
+			logger.Info(err.Err)
+		}
+		response.GenerateResponse(c, err.Code, response.WithMessage(err.Err))
+		return
+	}
+
+	response.GenerateResponse(c, http.StatusOK, response.WithMessage("success"))
+}
+
+func (h *CatHandler) RejectMatch(c *gin.Context) {
+	var request dto.MatchApproveRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		validation := validator.FormatValidation(err)
+		logger.Info(validation)
+		response.GenerateResponse(c, http.StatusBadRequest, response.WithMessage(validation))
+		return
+	}
+
+	userID := c.MustGet("userID").(string)
+	txHandle := c.MustGet("db_trx").(*sqlx.Tx)
+
+	err := h.mc.WithTrx(txHandle).Reject(&request, userID)
 	if err != nil {
 		if err.Code == http.StatusInternalServerError {
 			logger.Error(err)

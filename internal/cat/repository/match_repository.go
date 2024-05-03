@@ -17,6 +17,7 @@ type IMatchRepository interface {
 	FindById(id string) (*entity.Match, *response.ErrorResponse)
 	DeleteMatch(issuerCatID, targetCatID string, matchID string) *response.ErrorResponse
 	ApproveMatch(matchID string) *response.ErrorResponse
+	RejectMatch(matchID string) *response.ErrorResponse
 	WithTrx(trxHandle *sqlx.Tx) *matchRepository
 }
 
@@ -114,6 +115,19 @@ func (repo *matchRepository) DeleteMatch(issuerCatID, targetCatID string, matchI
 
 func (repo *matchRepository) ApproveMatch(matchID string) *response.ErrorResponse {
 	_, err := repo.getDB().Exec(`UPDATE matches SET status = $1 WHERE id = $2`, entity.Approved, matchID)
+	if err != nil {
+		return &response.ErrorResponse{
+			Code:    500,
+			Err:     "Internal Server Error",
+			Message: err.Error(),
+		}
+	}
+
+	return nil
+}
+
+func (repo *matchRepository) RejectMatch(matchID string) *response.ErrorResponse {
+	_, err := repo.getDB().Exec(`UPDATE matches SET status = $1 WHERE id = $2`, entity.Rejected, matchID)
 	if err != nil {
 		return &response.ErrorResponse{
 			Code:    500,
