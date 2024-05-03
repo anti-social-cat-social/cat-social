@@ -17,12 +17,13 @@ type IMatchRepository interface {
 	FindById(id string) (*entity.Match, *response.ErrorResponse)
 	IsCatAlreadyMatched(userCatId, targetCatId string) (bool, *response.ErrorResponse)
 	FindByCatId(id string) (entity.Match, *response.ErrorResponse)
-	DeleteMatch(issuerCatID, targetCatID string, matchID string) *response.ErrorResponse
+	DeleteMatchByOwnerId(issuerCatID, targetCatID string, matchID string) *response.ErrorResponse
 	ApproveMatch(matchID string) *response.ErrorResponse
 	RejectMatch(matchID string) *response.ErrorResponse
 	WithTrx(trxHandle *sqlx.Tx) *matchRepository
 	RemoveTrx()
 	FindAllByUserId(userId string) ([]dto.MatchResponse, *response.ErrorResponse)
+	DeleteMatch(matchID string) *response.ErrorResponse
 }
 
 type matchRepository struct {
@@ -147,7 +148,7 @@ func (repo *matchRepository) FindByCatId(id string) (entity.Match, *response.Err
 	return match, nil
 }
 
-func (repo *matchRepository) DeleteMatch(issuerCatID, targetCatID string, matchID string) *response.ErrorResponse {
+func (repo *matchRepository) DeleteMatchByOwnerId(issuerCatID, targetCatID string, matchID string) *response.ErrorResponse {
 	_, err := repo.getDB().Exec(`UPDATE matches SET isdeleted = true WHERE id != $3 AND (issuer_cat_id = $1 OR target_cat_id = $1 OR issuer_cat_id = $2 OR target_cat_id = $2)`, issuerCatID, targetCatID, matchID)
 	if err != nil {
 		return &response.ErrorResponse{
@@ -222,8 +223,8 @@ func (repo *matchRepository) FindAllByUserId(userId string) ([]dto.MatchResponse
 		JOIN cats catTar ON m.target_cat_id = catTar.id
 		JOIN users tar ON m.target_cat_owner = tar.id
 	WHERE
-		m.issuedby = $1
-		or m.target_cat_owner = $1;
+		(m.issuedby = $1 OR m.target_cat_owner = $1)
+		AND m.isdeleted = false;
     `
 	// Queryx is used here as it handles scanning into structs automatically
 	err := repo.db.Select(&matches, query, userId)
@@ -236,4 +237,17 @@ func (repo *matchRepository) FindAllByUserId(userId string) ([]dto.MatchResponse
 	}
 
 	return matches, nil
+}
+
+func (repo *matchRepository) DeleteMatch(matchID string) *response.ErrorResponse {
+	_, err := repo.getDB().Exec(`UPDATE matches SET isdeleted = true WHERE id = $1`, matchID)
+	if err != nil {
+		return &response.ErrorResponse{
+			Code:    500,
+			Err:     "Internal Server Error",
+			Message: err.Error(),
+		}
+	}
+
+	return nil
 }

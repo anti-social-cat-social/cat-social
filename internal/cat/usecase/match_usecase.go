@@ -15,6 +15,7 @@ type IMatchUsecase interface {
 	Approve(req *dto.MatchApproveRequest, userID string) *response.ErrorResponse
 	Reject(req *dto.MatchApproveRequest, userID string) *response.ErrorResponse
 	GetMatches(userID string) ([]dto.MatchResponse, *response.ErrorResponse)
+	DeleteMatch(matchID, userID string) *response.ErrorResponse
 }
 
 type matchUsecase struct {
@@ -154,7 +155,7 @@ func (uc *matchUsecase) Approve(req *dto.MatchApproveRequest, userID string) *re
 		return err
 	}
 
-	err = uc.matchRepository.DeleteMatch(match.IssuerCatId, match.TargetCatId, req.MatchId)
+	err = uc.matchRepository.DeleteMatchByOwnerId(match.IssuerCatId, match.TargetCatId, req.MatchId)
 	if err != nil {
 		return err
 	}
@@ -245,4 +246,46 @@ func (uc *matchUsecase) GetMatches(userID string) ([]dto.MatchResponse, *respons
 	}
 
 	return matches, nil
+}
+
+func (uc *matchUsecase) DeleteMatch(matchID, userID string) *response.ErrorResponse {
+	// check if matchId is exist
+	match, err := uc.matchRepository.FindById(matchID)
+	if err != nil {
+		return err
+	}
+
+	if match.IsDeleted {
+		return &response.ErrorResponse{
+			Code:    400,
+			Err:     "Match is no longer valid",
+			Message: "error",
+		}
+	}
+
+	if match.Status != entity.Submitted {
+		return &response.ErrorResponse{
+			Code:    400,
+			Err:     "Match is already approved or rejected",
+			Message: "error",
+		}
+	}
+
+	if match.IssuedBy != userID {
+		return &response.ErrorResponse{
+			Code:    403,
+			Err:     "You are not the owner of the match",
+			Message: "error",
+		}
+	}
+
+	err = uc.matchRepository.DeleteMatch(matchID)
+	if err != nil {
+		return err
+	}
+
+	uc.catRepository.RemoveTrx()
+	uc.matchRepository.RemoveTrx()
+
+	return nil
 }
