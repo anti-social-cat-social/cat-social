@@ -11,7 +11,7 @@ import (
 
 type ICatUsecase interface {
 	GetAll(queryParam *dto.CatRequestQueryParams, userID string) ([]*entity.Cat, *response.ErrorResponse)
-	Update(id string, dto dto.CatUpdateRequestBody) (*entity.Cat, *response.ErrorResponse)
+	Update(id string, dto dto.CatUpdateRequestBody, userID string) (*entity.Cat, *response.ErrorResponse)
 	Create(dto dto.CatUpdateRequestBody, userID string) (*entity.Cat, *localError.GlobalError)
 	Delete(id string, userId string) *localError.GlobalError
 }
@@ -51,10 +51,18 @@ func (uc *CatUsecase) Create(dto dto.CatUpdateRequestBody, userID string) (*enti
 	return cat, nil
 }
 
-func (uc *CatUsecase) Update(id string, input dto.CatUpdateRequestBody) (*entity.Cat, *response.ErrorResponse) {
+func (uc *CatUsecase) Update(id string, input dto.CatUpdateRequestBody, userID string) (*entity.Cat, *response.ErrorResponse) {
 	cat, error := uc.repo.FindById(id)
 	if error != nil {
 		return nil, error
+	}
+
+	if cat.OwnerId != userID {
+		return nil, &response.ErrorResponse{
+			Code:    403,
+			Err:     "Forbidden",
+			Message: "Forbidden",
+		}
 	}
 
 	if cat.Sex != input.Sex && cat.HasMatched {

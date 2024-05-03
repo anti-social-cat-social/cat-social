@@ -105,6 +105,7 @@ func (h *CatHandler) Store(c *gin.Context) {
 
 func (h *CatHandler) Update(c *gin.Context) {
 	id := c.Param("id")
+	userID := c.MustGet("userID").(string)
 
 	var request dto.CatUpdateRequestBody
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -120,7 +121,7 @@ func (h *CatHandler) Update(c *gin.Context) {
 		return
 	}
 
-	cat, err := h.uc.Update(id, request)
+	cat, err := h.uc.Update(id, request, userID)
 	if err != nil {
 		response.GenerateResponse(c, err.Code, response.WithMessage(err.Err))
 		c.Abort()
