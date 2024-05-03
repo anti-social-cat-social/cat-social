@@ -1,8 +1,10 @@
 package cat
 
 import (
+	"1-cat-social/config"
 	dto "1-cat-social/internal/cat/dto"
 	entity "1-cat-social/internal/cat/entity"
+	"1-cat-social/pkg/logger"
 	response "1-cat-social/pkg/response"
 	"database/sql"
 	"errors"
@@ -16,19 +18,39 @@ type ICatRepository interface {
 	FindAll(queryParam *dto.CatRequestQueryParams, userID string) ([]*entity.Cat, *response.ErrorResponse)
 	FindById(id string) (*entity.Cat, *response.ErrorResponse)
 	Update(entity entity.Cat) (*entity.Cat, *response.ErrorResponse)
+	WithTrx(*sqlx.Tx) *catRepository
+	IsCatExist(id string) error
 }
 
-type CatRepository struct {
-	db *sqlx.DB
+type catRepository struct {
+	db   *sqlx.DB
+	tXdb *sqlx.Tx
 }
 
 func NewCatRepository(db *sqlx.DB) ICatRepository {
-	return &CatRepository{
-		db: db,
+	return &catRepository{
+		db:   db,
+		tXdb: nil,
 	}
 }
 
-func (repo *CatRepository) FindAll(queryParam *dto.CatRequestQueryParams, userID string) ([]*entity.Cat, *response.ErrorResponse) {
+func (repo *catRepository) getDB() config.DB {
+	if repo.tXdb != nil {
+		return repo.tXdb
+	}
+	return repo.db
+}
+
+func (repo *catRepository) WithTrx(trxHandle *sqlx.Tx) *catRepository {
+	if trxHandle == nil {
+		logger.Info("Transaction Database not found")
+		return repo
+	}
+	repo.tXdb = trxHandle
+	return repo
+}
+
+func (repo *catRepository) FindAll(queryParam *dto.CatRequestQueryParams, userID string) ([]*entity.Cat, *response.ErrorResponse) {
 	cats := []*entity.Cat{}
 
 	query := repo.generateFilterCatQuery(queryParam)
@@ -50,7 +72,7 @@ func (repo *CatRepository) FindAll(queryParam *dto.CatRequestQueryParams, userID
 	return cats, nil
 }
 
-func (repo *CatRepository) IsCatExist(id string) error {
+func (repo *catRepository) IsCatExist(id string) error {
 	var cat entity.Cat
 
 	err := repo.db.Get(cat, "SELECT * FROM cats WHERE id = $1", id)
@@ -64,10 +86,10 @@ func (repo *CatRepository) IsCatExist(id string) error {
 	return nil
 }
 
-func (repo *CatRepository) FindById(id string) (*entity.Cat, *response.ErrorResponse) {
+func (repo *catRepository) FindById(id string) (*entity.Cat, *response.ErrorResponse) {
 	cat := &entity.Cat{}
 
-	err := repo.db.Get(cat, "SELECT * FROM cats WHERE id = $1", id)
+	err := repo.getDB().Get(cat, "SELECT * FROM cats WHERE id = $1", id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, &response.ErrorResponse{
@@ -86,9 +108,11 @@ func (repo *CatRepository) FindById(id string) (*entity.Cat, *response.ErrorResp
 	return cat, nil
 }
 
-func (repo *CatRepository) Update(cat entity.Cat) (*entity.Cat, *response.ErrorResponse) {
-	query := "UPDATE cats SET name = $1, race = $2, sex = $3, ageInMonth = $4, description = $5, imageUrls = $6"
-	_, err := repo.db.Exec(query, cat.Name, cat.Race, cat.Sex, cat.AgeInMonth, cat.Description, cat.ImageUrls)
+func (repo *catRepository) Update(cat entity.Cat) (*entity.Cat, *response.ErrorResponse) {
+	var err error
+
+	query := "UPDATE cats SET name = $1, race = $2, sex = $3, ageInMonth = $4, description = $5, imageUrls = $6, hasmatched = $7 WHERE id = $8"
+	_, err = repo.getDB().Exec(query, cat.Name, cat.Race, cat.Sex, cat.AgeInMonth, cat.Description, cat.ImageUrls, cat.HasMatched, cat.ID)
 
 	if err != nil {
 		return nil, &response.ErrorResponse{
@@ -101,49 +125,89 @@ func (repo *CatRepository) Update(cat entity.Cat) (*entity.Cat, *response.ErrorR
 	return &cat, nil
 }
 
-func (repo *CatRepository) generateFilterCatQuery(queryParam *dto.CatRequestQueryParams) string {
+func (repo *catRepository) generateFilterCatQuery(queryParam *dto.CatRequestQueryParams) string {
 	query := "SELECT * FROM cats WHERE isdeleted = false"
 
-	if queryParam.ID != "" {
-		query += fmt.Sprintf(" AND id = '%s'", queryParam.ID)
+	query = addIDFilter(query, queryParam.ID)
+	query = addRaceFilter(query, queryParam.Race)
+	query = addSexFilter(query, queryParam.Sex)
+	query = addHasMatchedFilter(query, queryParam.HasMatched)
+	query = addAgeInMonthFilter(query, queryParam.AgeInMonth)
+	query = addOwnedFilter(query, queryParam.Owned)
+	query = addSearchFilter(query, queryParam.Search)
+
+	query += " ORDER BY createdat DESC"
+
+	query = addLimitOffset(query, queryParam.Limit, queryParam.Offset)
+
+	return query
+}
+
+func addIDFilter(query string, id string) string {
+	if id != "" {
+		query += fmt.Sprintf(" AND id = '%s'", id)
 	}
-	if queryParam.Race != "" {
-		query += fmt.Sprintf(" AND race = '%s'", queryParam.Race)
+	return query
+}
+
+func addRaceFilter(query string, race string) string {
+	if race != "" {
+		query += fmt.Sprintf(" AND race = '%s'", race)
 	}
-	if queryParam.Sex != "" {
-		query += fmt.Sprintf(" AND sex = '%s'", queryParam.Sex)
+	return query
+}
+
+func addSexFilter(query string, sex string) string {
+	if sex != "" {
+		query += fmt.Sprintf(" AND sex = '%s'", sex)
 	}
-	if queryParam.HasMatched != "" {
-		query += fmt.Sprintf(" AND hasmatched = %s", queryParam.HasMatched)
+	return query
+}
+
+func addHasMatchedFilter(query string, hasMatched string) string {
+	if hasMatched != "" {
+		query += fmt.Sprintf(" AND hasmatched = %s", hasMatched)
 	}
-	if queryParam.AgeInMonth != "" {
-		if strings.Contains(queryParam.AgeInMonth, ">") || strings.Contains(queryParam.AgeInMonth, "<") {
-			query += fmt.Sprintf(" AND ageinmonth %s", queryParam.AgeInMonth)
+	return query
+}
+
+func addAgeInMonthFilter(query string, ageInMonth string) string {
+	if ageInMonth != "" {
+		if strings.Contains(ageInMonth, ">") || strings.Contains(ageInMonth, "<") {
+			query += fmt.Sprintf(" AND ageinmonth %s", ageInMonth)
 		} else {
-			query += fmt.Sprintf(" AND ageinmonth = %s", queryParam.AgeInMonth)
+			query += fmt.Sprintf(" AND ageinmonth = %s", ageInMonth)
 		}
 	}
-	if queryParam.Owned != "" {
-		if queryParam.Owned == "true" {
+	return query
+}
+
+func addOwnedFilter(query string, owned string) string {
+	if owned != "" {
+		if owned == "true" {
 			query += " AND ownerid = $1"
 		} else {
 			query += " AND ownerid != $1"
 		}
 	}
-	if queryParam.Search != "" {
-		query += fmt.Sprintf(" AND name ILIKE '%%%s%%'", queryParam.Search)
+	return query
+}
+
+func addSearchFilter(query string, search string) string {
+	if search != "" {
+		query += fmt.Sprintf(" AND name ILIKE '%%%s%%'", search)
 	}
+	return query
+}
 
-	query += " ORDER BY createdat DESC"
-
-	if queryParam.Limit != 0 {
-		query += fmt.Sprintf(" LIMIT %d", queryParam.Limit)
+func addLimitOffset(query string, limit, offset int) string {
+	if limit != 0 {
+		query += fmt.Sprintf(" LIMIT %d", limit)
 	} else {
 		query += " LIMIT 10"
 	}
-	if queryParam.Offset != 0 {
-		query += fmt.Sprintf(" OFFSET %d", queryParam.Offset)
+	if offset != 0 {
+		query += fmt.Sprintf(" OFFSET %d", offset)
 	}
-
 	return query
 }

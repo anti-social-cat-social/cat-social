@@ -1,84 +1,73 @@
 package cat
 
 import (
+	"1-cat-social/config"
+	dto "1-cat-social/internal/cat/dto"
 	entity "1-cat-social/internal/cat/entity"
 	"1-cat-social/pkg/logger"
 	response "1-cat-social/pkg/response"
-	"context"
 
 	"github.com/jmoiron/sqlx"
 )
 
 type IMatchRepository interface {
-	MatchCat(userCat *entity.Cat, matchCat *entity.Cat, msg string) (*entity.Match, *response.ErrorResponse)
+	MatchCat(req *dto.CatMatchRequest, issuerID string) *response.ErrorResponse
+	WithTrx(trxHandle *sqlx.Tx) *matchRepository
 }
 
-type MatchRepository struct {
-	db *sqlx.DB
+type matchRepository struct {
+	db   *sqlx.DB
+	tXdb *sqlx.Tx
 }
 
 func NewMatchRepository(db *sqlx.DB) IMatchRepository {
-	return &MatchRepository{
-		db: db,
+	return &matchRepository{
+		db:   db,
+		tXdb: nil,
 	}
 }
 
-func (repo *MatchRepository) MatchCat(userCat *entity.Cat, matchCat *entity.Cat, msg string) (*entity.Match, *response.ErrorResponse) {
-	match := &entity.Match{}
-
-	// update usercar and matchcat
-	tx, err := repo.db.Begin()
-	if err != nil {
-		return nil, &response.ErrorResponse{
-			Code:    500,
-			Err:     "Internal Server Error",
-			Message: err.Error(),
-		}
+func (repo *matchRepository) getDB() config.DB {
+	if repo.tXdb != nil {
+		return repo.tXdb
 	}
-	defer func() {
-		if p := recover(); p != nil {
-			// Rollback the transaction if panic occurs
-			tx.Rollback()
-			panic(p)
-		} else if err != nil {
-			// Rollback the transaction if there's an error
-			tx.Rollback()
-		} else {
-			// Commit the transaction if successful
-			err = tx.Commit()
-			if err != nil {
-				logger.Error(err)
-			}
-		}
-	}()
+	return repo.db
+}
 
-	_, err = tx.Exec("UPDATE cats SET hasmatched = true WHERE id = $1", userCat.ID)
-	if err != nil {
-		return nil, &response.ErrorResponse{
-			Code:    500,
-			Err:     "Internal Server Error",
-			Message: err.Error(),
-		}
+func (repo *matchRepository) WithTrx(trxHandle *sqlx.Tx) *matchRepository {
+	if trxHandle == nil {
+		logger.Info("Transaction Database not found")
+		return repo
+	}
+	repo.tXdb = trxHandle
+	return repo
+}
+
+func (repo *matchRepository) MatchCat(req *dto.CatMatchRequest, issuerID string) *response.ErrorResponse {
+	payload := map[string]interface{}{
+		"usercatid":  req.UserCatId,
+		"matchcatid": req.MatchCatId,
+		"message":    req.Message,
+		"status":     entity.Submitted,
+		"issuedby":   issuerID,
 	}
 
-	_, err = tx.Exec("UPDATE cats SET hasmatched = true WHERE id = $1", matchCat.ID)
+	res, err := repo.getDB().NamedExec(`INSERT INTO matches (issuer_cat_id, target_cat_id, message, status, issuedby) VALUES (:usercatid,:matchcatid,:message,:status,:issuedby) RETURNING id`, payload)
 	if err != nil {
-		return nil, &response.ErrorResponse{
+		return &response.ErrorResponse{
 			Code:    500,
 			Err:     "Internal Server Error",
 			Message: err.Error(),
 		}
 	}
 
-	// insert match
-	err = tx.QueryRowContext(context.Background(), "INSERT INTO matches (issuer_cat_id, target_cat_id, message, status, issuedby) VALUES ($1, $2, $3, $4, $5) RETURNING id", userCat.ID, matchCat.ID, msg, entity.Submitted, userCat.OwnerId).Scan(&match.ID)
-	if err != nil {
-		return nil, &response.ErrorResponse{
+	if numRows, err := res.RowsAffected(); err != nil && numRows == 0 {
+		return &response.ErrorResponse{
 			Code:    500,
 			Err:     "Internal Server Error",
-			Message: err.Error(),
+			Message: "Failed to insert match",
 		}
 	}
 
-	return match, nil
+	return nil
 }

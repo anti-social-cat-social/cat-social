@@ -7,7 +7,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func ValidateIsCatExist(id string, r repo.CatRepository) error {
+func ValidateIsCatExist(id string, r repo.ICatRepository) error {
 	err := r.IsCatExist(id)
 
 	return err
