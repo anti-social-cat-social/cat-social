@@ -6,5 +6,5 @@ type CatMatchRequest struct {
 	Message    string `json:"message" binding:"required,min=5,max=120"`
 }
 type MatchApproveRequest struct {
-	MatchId string `json:"matchId" binding:"required"`
+	MatchId string `json:"matchId" binding:"required,uuid"`
 }

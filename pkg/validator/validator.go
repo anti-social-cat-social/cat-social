@@ -44,6 +44,8 @@ func getErrorMsg(fe validator.FieldError) string {
 		return "must be one of " + strings.Replace(fe.Param(), " ", ", ", -1)
 	case "len":
 		return "must have a length of " + ToCamelCase(fe.Param()) + "!"
+	case "uuid":
+		return "not a valid UUID!"
 	}
 	return "something is wrong with this field!"
 }
