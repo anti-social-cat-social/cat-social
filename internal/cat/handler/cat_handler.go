@@ -31,14 +31,15 @@ func (h *CatHandler) Router(r *gin.RouterGroup, db *sqlx.DB) {
 	endpoint := r.Group("/cat")
 	endpoint.Use(middleware.UseJwtAuth)
 
-	endpoint.GET("", middleware.UseJwtAuth, h.GetAll)
-	endpoint.POST("", middleware.UseJwtAuth, h.Store)
-	endpoint.PUT("/:id", middleware.UseJwtAuth, h.Update)
-	endpoint.GET("/match", middleware.UseJwtAuth, h.GetMatches)
-	endpoint.POST("/match", middleware.UseJwtAuth, middleware.DBTransactionMiddleware(db), h.Match)
-	endpoint.POST("/match/approve", middleware.UseJwtAuth, middleware.DBTransactionMiddleware(db), h.ApproveMatch)
-	endpoint.DELETE("/:id", middleware.UseJwtAuth, h.Delete)
+	endpoint.GET("", h.GetAll)
+	endpoint.POST("", h.Store)
+	endpoint.PUT("/:id", h.Update)
+	endpoint.DELETE("/:id", h.Delete)
+	endpoint.GET("/match", h.GetMatches)
+	endpoint.POST("/match", middleware.DBTransactionMiddleware(db), h.Match)
+	endpoint.POST("/match/approve", middleware.DBTransactionMiddleware(db), h.ApproveMatch)
 	endpoint.POST("/match/reject", middleware.DBTransactionMiddleware(db), h.RejectMatch)
+	endpoint.DELETE("/match/:id", h.DeleteMatch)
 }
 
 func (h *CatHandler) GetAll(c *gin.Context) {
@@ -249,4 +250,17 @@ func (h *CatHandler) GetMatches(c *gin.Context) {
 	}
 
 	response.GenerateResponse(c, http.StatusOK, response.WithMessage("success"), response.WithData(matches))
+}
+
+func (h *CatHandler) DeleteMatch(c *gin.Context) {
+	matchID := c.Param("id")
+	userID := c.MustGet("userID").(string)
+
+	err := h.mc.DeleteMatch(matchID, userID)
+	if err != nil {
+		response.GenerateResponse(c, err.Code, response.WithMessage(err.Err))
+		return
+	}
+
+	response.GenerateResponse(c, http.StatusOK, response.WithMessage("success"))
 }
