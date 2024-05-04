@@ -19,7 +19,7 @@ type CatRequestQueryParams struct {
 	ID         string `form:"id"`
 	Limit      int    `form:"limit"`
 	Offset     int    `form:"offset"`
-	Race       string `form:"race" binding:"omitempty,oneof='Persian' 'MaineCoon' 'Siamese' 'Ragdoll' 'Bengal' 'Sphynx' 'British Shorthair' 'Abyssinian' 'Scottish Fold' 'Birman'"`
+	Race       string `form:"race" binding:"omitempty,oneof='Persian' 'Maine Coon' 'Siamese' 'Ragdoll' 'Bengal' 'Sphynx' 'British Shorthair' 'Abyssinian' 'Scottish Fold' 'Birman'"`
 	Sex        string `form:"sex" binding:"omitempty,oneof=male female"`
 	HasMatched string `form:"hasMatched" binding:"omitempty,oneof=true false"`
 	AgeInMonth string `form:"ageInMonth"`

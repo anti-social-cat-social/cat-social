@@ -45,7 +45,8 @@ func (h *CatHandler) Router(r *gin.RouterGroup, db *sqlx.DB) {
 func (h *CatHandler) GetAll(c *gin.Context) {
 	var queryParam dto.CatRequestQueryParams
 	if err := c.ShouldBindQuery(&queryParam); err != nil {
-		logger.Info(err.Error())
+		validation := validator.FormatValidation(err)
+		logger.Info(validation)
 		response.GenerateResponse(c, http.StatusBadRequest, response.WithMessage(err.Error()))
 		c.Abort()
 		return
@@ -170,6 +171,7 @@ func (h *CatHandler) Match(c *gin.Context) {
 	txHandle := c.MustGet("db_trx").(*sqlx.Tx)
 
 	err := h.mc.WithTrx(txHandle).Match(&request, userID)
+	h.mc.RemoveTrx()
 	if err != nil {
 		if err.Code == http.StatusInternalServerError {
 			logger.Error(err)
@@ -196,6 +198,7 @@ func (h *CatHandler) ApproveMatch(c *gin.Context) {
 	txHandle := c.MustGet("db_trx").(*sqlx.Tx)
 
 	err := h.mc.WithTrx(txHandle).Approve(&request, userID)
+	h.mc.RemoveTrx()
 	if err != nil {
 		if err.Code == http.StatusInternalServerError {
 			logger.Error(err)
@@ -222,6 +225,7 @@ func (h *CatHandler) RejectMatch(c *gin.Context) {
 	txHandle := c.MustGet("db_trx").(*sqlx.Tx)
 
 	err := h.mc.WithTrx(txHandle).Reject(&request, userID)
+	h.mc.RemoveTrx()
 	if err != nil {
 		if err.Code == http.StatusInternalServerError {
 			logger.Error(err)

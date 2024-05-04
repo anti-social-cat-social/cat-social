@@ -11,6 +11,7 @@ import (
 
 type IMatchUsecase interface {
 	WithTrx(*sqlx.Tx) *matchUsecase
+	RemoveTrx()
 	Match(req *dto.CatMatchRequest, userID string) *response.ErrorResponse
 	Approve(req *dto.MatchApproveRequest, userID string) *response.ErrorResponse
 	Reject(req *dto.MatchApproveRequest, userID string) *response.ErrorResponse
@@ -34,6 +35,11 @@ func (uc *matchUsecase) WithTrx(trxHandle *sqlx.Tx) *matchUsecase {
 	uc.catRepository = uc.catRepository.WithTrx(trxHandle)
 	uc.matchRepository = uc.matchRepository.WithTrx(trxHandle)
 	return uc
+}
+
+func (uc *matchUsecase) RemoveTrx() {
+	uc.catRepository.RemoveTrx()
+	uc.matchRepository.RemoveTrx()
 }
 
 func (uc *matchUsecase) Match(req *dto.CatMatchRequest, userID string) *response.ErrorResponse {
@@ -107,9 +113,6 @@ func (uc *matchUsecase) Match(req *dto.CatMatchRequest, userID string) *response
 	if err != nil {
 		return err
 	}
-
-	uc.catRepository.RemoveTrx()
-	uc.matchRepository.RemoveTrx()
 
 	return nil
 }
@@ -186,9 +189,6 @@ func (uc *matchUsecase) Approve(req *dto.MatchApproveRequest, userID string) *re
 		}
 	}
 
-	uc.catRepository.RemoveTrx()
-	uc.matchRepository.RemoveTrx()
-
 	return nil
 }
 
@@ -232,9 +232,6 @@ func (uc *matchUsecase) Reject(req *dto.MatchApproveRequest, userID string) *res
 	if err != nil {
 		return err
 	}
-
-	uc.catRepository.RemoveTrx()
-	uc.matchRepository.RemoveTrx()
 
 	return nil
 }
@@ -283,9 +280,6 @@ func (uc *matchUsecase) DeleteMatch(matchID, userID string) *response.ErrorRespo
 	if err != nil {
 		return err
 	}
-
-	uc.catRepository.RemoveTrx()
-	uc.matchRepository.RemoveTrx()
 
 	return nil
 }
