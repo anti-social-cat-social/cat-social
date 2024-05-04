@@ -20,6 +20,7 @@ type IMatchRepository interface {
 	ApproveMatch(matchID string) *response.ErrorResponse
 	RejectMatch(matchID string) *response.ErrorResponse
 	WithTrx(trxHandle *sqlx.Tx) *matchRepository
+	GetAllMatchDetail() ([]*entity.MatchDetail, *response.ErrorResponse)
 }
 
 type matchRepository struct {
@@ -155,4 +156,66 @@ func (repo *matchRepository) RejectMatch(matchID string) *response.ErrorResponse
 	}
 
 	return nil
+}
+
+func (repo *matchRepository) GetAllMatchDetail() ([]*entity.MatchDetail, *response.ErrorResponse) {
+	matchdetail := []*entity.MatchDetail{}
+
+	err := repo.db.Select(&matchdetail, `
+		with issuer_cat_user as (
+		select 
+		matches.id matches_id,
+		users.name users_name,
+		users.email users_email,
+		--users.createdat users_createdat, belum ada fieldnya
+		cats.id issuer_cat_id,
+		cats.name cats_issuer_name,
+		cats.race cats_issuer_race,
+		cats.sex cats_issuer_sex,
+		cats.description cats_issuer_description,
+		cats.ageinmonth cats_issuer_ageinmonth,
+		cats.imageurls cats_issuer_imageurls,
+		cats.hasmatched cats_issuer_hasmatched,
+		cats.createdat cats_issuer_createdat,
+		matches.message matches_message,
+		matches.createdat matches_createdat,
+		matches.target_cat_id
+		from users
+		inner join matches
+		on users.id = matches.issuedby
+		inner join cats
+		on matches.issuer_cat_id = cats.id
+		)
+		select
+		issuer_cat_user.*,
+		cats.name cats_target_name,
+		cats.race cats_target_race,
+		cats.sex cats_target_sex,
+		cats.description cats_target_description,
+		cats.ageinmonth cats_target_ageinmonth,
+		cats.imageurls cats_target_imageurls,
+		cats.hasmatched cats_target_hasmatched,
+		cats.createdat cats_target_createdat
+		from issuer_cat_user
+		inner join cats
+		on issuer_cat_user.target_cat_id = cats.id
+		order by matches_createdat desc;
+	`)
+	
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, &response.ErrorResponse{
+				Code:    404,
+				Err:     "Data not found",
+				Message: err.Error(),
+			}
+		}
+		return nil, &response.ErrorResponse{
+			Code:    500,
+			Err:     "Internal Server Error",
+			Message: err.Error(),
+		}
+	}
+
+	return matchdetail, nil
 }

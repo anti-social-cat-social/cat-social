@@ -14,6 +14,7 @@ type IMatchUsecase interface {
 	Match(req *dto.CatMatchRequest, userID string) *response.ErrorResponse
 	Approve(req *dto.MatchApproveRequest, userID string) *response.ErrorResponse
 	Reject(req *dto.MatchApproveRequest, userID string) *response.ErrorResponse
+	GetAllMatchDetail() ([]*entity.MatchDetail, *response.ErrorResponse)
 }
 
 type matchUsecase struct {
@@ -226,4 +227,8 @@ func (uc *matchUsecase) Reject(req *dto.MatchApproveRequest, userID string) *res
 	}
 
 	return nil
+}
+
+func (uc *matchUsecase) GetAllMatchDetail() ([]*entity.MatchDetail, *response.ErrorResponse) {
+	return uc.matchRepository.GetAllMatchDetail()
 }
