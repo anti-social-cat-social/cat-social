@@ -173,6 +173,7 @@ func (h *CatHandler) Match(c *gin.Context) {
 	err := h.mc.WithTrx(txHandle).Match(&request, userID)
 	h.mc.RemoveTrx()
 	if err != nil {
+		err.Message = err.Message + " >>> error match"
 		if err.Code == http.StatusInternalServerError {
 			logger.Error(err)
 		} else {
@@ -200,6 +201,7 @@ func (h *CatHandler) ApproveMatch(c *gin.Context) {
 	err := h.mc.WithTrx(txHandle).Approve(&request, userID)
 	h.mc.RemoveTrx()
 	if err != nil {
+		err.Message = err.Message + " >>> error approve"
 		if err.Code == http.StatusInternalServerError {
 			logger.Error(err)
 		} else {
@@ -227,6 +229,7 @@ func (h *CatHandler) RejectMatch(c *gin.Context) {
 	err := h.mc.WithTrx(txHandle).Reject(&request, userID)
 	h.mc.RemoveTrx()
 	if err != nil {
+		err.Message = err.Message + " >>> error reject"
 		if err.Code == http.StatusInternalServerError {
 			logger.Error(err)
 		} else {
