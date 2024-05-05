@@ -23,7 +23,7 @@ func InitDb() *sqlx.DB {
 	dbname := os.Getenv("DB_NAME")
 	params := os.Getenv("DB_PARAMS")
 
-	connection := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s %s", host, port, username, password, dbname, params)
+	connection := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?%s", username, password, host, port, dbname, params)
 	db, err := sqlx.Connect("postgres", connection)
 	if err != nil {
 		log.Fatalln(err)
